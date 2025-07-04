@@ -1,4 +1,4 @@
-// src/routes/api/parking/reservations/+server.js - Updated version
+// src/routes/api/parking/reservations/+server.js - Updated with PDF support
 import { json } from "@sveltejs/kit";
 import { authenticateRequest } from "$lib/auth-middleware.js";
 import {
@@ -6,6 +6,7 @@ import {
   checkSpaceAvailability,
   getUserReservations,
 } from "$lib/parking.js";
+import { uploadPDF, deletePDF } from "$lib/storage.js";
 import { db } from "$lib/firebase.js";
 import { collection, addDoc, doc, getDoc } from "firebase/firestore";
 
@@ -22,8 +23,32 @@ export async function POST({ request }) {
     }
 
     const { uid: userId } = authResult.user;
-    const { spaceId, startDate, endDate, shiftType, scheduleDocument } =
-      await request.json();
+
+    // Check if request contains file upload
+    const contentType = request.headers.get("content-type");
+    let requestData;
+    let uploadedFile = null;
+
+    if (contentType && contentType.includes("multipart/form-data")) {
+      // Handle form data with file upload
+      const formData = await request.formData();
+      requestData = {
+        spaceId: formData.get("spaceId"),
+        startDate: formData.get("startDate"),
+        endDate: formData.get("endDate"),
+        shiftType: formData.get("shiftType"),
+      };
+
+      const file = formData.get("scheduleDocument");
+      if (file && file.size > 0) {
+        uploadedFile = file;
+      }
+    } else {
+      // Handle regular JSON request
+      requestData = await request.json();
+    }
+
+    const { spaceId, startDate, endDate, shiftType } = requestData;
 
     // Validate required fields
     if (!spaceId || !startDate || !endDate || !shiftType) {
@@ -37,15 +62,8 @@ export async function POST({ request }) {
       );
     }
 
-    if (spaceId <= 1 || spaceId >= 20) {
-      return json(
-        {
-          success: false,
-          error: "Space ID must be between 1 and 20",
-        },
-        { status: 400 }
-      );
-    }
+    // Convert spaceId to string for Firestore document ID
+    const spaceDocId = `space-${spaceId}`;
 
     // Validate shift type
     const validShiftTypes = ["8:00-14:00", "14:00-21:00", "9:30-18:30"];
@@ -77,19 +95,19 @@ export async function POST({ request }) {
     const end = new Date(endDate);
     const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
-    if (daysDiff > 2 && !scheduleDocument) {
+    if (daysDiff > 2 && !uploadedFile) {
       return json(
         {
           success: false,
           error:
-            "Schedule document is required for reservations longer than 2 days",
+            "Schedule document (PDF) is required for reservations longer than 2 days",
         },
         { status: 400 }
       );
     }
 
     // Verify space exists
-    const spaceDoc = await getDoc(doc(db, "parkingSpaces", spaceId));
+    const spaceDoc = await getDoc(doc(db, "parkingSpaces", spaceDocId));
     if (!spaceDoc.exists()) {
       return json(
         {
@@ -102,7 +120,7 @@ export async function POST({ request }) {
 
     // Check space availability
     const isAvailable = await checkSpaceAvailability(
-      spaceId,
+      spaceDocId,
       startDate,
       endDate,
       shiftType
@@ -119,16 +137,34 @@ export async function POST({ request }) {
       );
     }
 
+    // Upload document if provided
+    let documentData = null;
+    if (uploadedFile) {
+      const uploadResult = await uploadPDF(uploadedFile, userId);
+
+      if (!uploadResult.success) {
+        return json(
+          {
+            success: false,
+            error: `Failed to upload document: ${uploadResult.error}`,
+          },
+          { status: 500 }
+        );
+      }
+
+      documentData = uploadResult.data;
+    }
+
     // Create reservation
     const reservationData = {
       userId,
-      spaceId,
+      spaceId: spaceDocId,
       startDate,
       endDate,
       shiftType,
       status: "active",
       createdAt: new Date().toISOString(),
-      scheduleDocument: scheduleDocument || null,
+      scheduleDocument: documentData,
     };
 
     const docRef = await addDoc(

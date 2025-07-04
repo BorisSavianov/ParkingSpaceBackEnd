@@ -1,6 +1,9 @@
+// src/routes/api/parking/reservations/[reservationId]/+server.js - Updated with PDF support
 import { json } from "@sveltejs/kit";
 import { db } from "$lib/firebase.js";
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { authenticateRequest } from "$lib/auth-middleware.js";
+import { uploadPDF, deletePDF } from "$lib/storage.js";
 import {
   checkSpaceAvailability,
   validateReservationPeriod,
@@ -8,15 +11,18 @@ import {
 
 export async function PUT({ params, request }) {
   try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return json({ success: false, error: "Unauthorized" }, { status: 401 });
+    // Authenticate the request
+    const authResult = await authenticateRequest(request);
+
+    if (!authResult.success) {
+      return json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      );
     }
 
-    const userId = authHeader.split(" ")[1];
+    const { uid: userId } = authResult.user;
     const { reservationId } = params;
-    const { startDate, endDate, shiftType, scheduleDocument } =
-      await request.json();
 
     // Get existing reservation
     const reservationDoc = await getDoc(doc(db, "reservations", reservationId));
@@ -34,6 +40,31 @@ export async function PUT({ params, request }) {
       return json({ success: false, error: "Unauthorized" }, { status: 403 });
     }
 
+    // Check if request contains file upload
+    const contentType = request.headers.get("content-type");
+    let requestData;
+    let uploadedFile = null;
+
+    if (contentType && contentType.includes("multipart/form-data")) {
+      // Handle form data with file upload
+      const formData = await request.formData();
+      requestData = {
+        startDate: formData.get("startDate"),
+        endDate: formData.get("endDate"),
+        shiftType: formData.get("shiftType"),
+      };
+
+      const file = formData.get("scheduleDocument");
+      if (file && file.size > 0) {
+        uploadedFile = file;
+      }
+    } else {
+      // Handle regular JSON request
+      requestData = await request.json();
+    }
+
+    const { startDate, endDate, shiftType } = requestData;
+
     // Validate new period if dates are being changed
     if (startDate && endDate) {
       const periodValidation = validateReservationPeriod(startDate, endDate);
@@ -42,6 +73,22 @@ export async function PUT({ params, request }) {
           {
             success: false,
             error: periodValidation.error,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Check if reservation is for more than 2 days and requires document
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+      if (daysDiff > 2 && !uploadedFile && !reservation.scheduleDocument) {
+        return json(
+          {
+            success: false,
+            error:
+              "Schedule document (PDF) is required for reservations longer than 2 days",
           },
           { status: 400 }
         );
@@ -68,12 +115,36 @@ export async function PUT({ params, request }) {
       }
     }
 
+    // Handle document upload/update
+    let documentData = reservation.scheduleDocument;
+    if (uploadedFile) {
+      // Delete old document if exists
+      if (reservation.scheduleDocument && reservation.scheduleDocument.path) {
+        await deletePDF(reservation.scheduleDocument.path);
+      }
+
+      // Upload new document
+      const uploadResult = await uploadPDF(uploadedFile, userId, reservationId);
+
+      if (!uploadResult.success) {
+        return json(
+          {
+            success: false,
+            error: `Failed to upload document: ${uploadResult.error}`,
+          },
+          { status: 500 }
+        );
+      }
+
+      documentData = uploadResult.data;
+    }
+
     // Update reservation
     const updateData = {
       ...(startDate && { startDate }),
       ...(endDate && { endDate }),
       ...(shiftType && { shiftType }),
-      ...(scheduleDocument !== undefined && { scheduleDocument }),
+      scheduleDocument: documentData,
       updatedAt: new Date().toISOString(),
     };
 
@@ -84,6 +155,7 @@ export async function PUT({ params, request }) {
       message: "Reservation updated successfully",
     });
   } catch (error) {
+    console.error("Reservation update error:", error);
     return json(
       {
         success: false,
@@ -96,12 +168,17 @@ export async function PUT({ params, request }) {
 
 export async function DELETE({ params, request }) {
   try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return json({ success: false, error: "Unauthorized" }, { status: 401 });
+    // Authenticate the request
+    const authResult = await authenticateRequest(request);
+
+    if (!authResult.success) {
+      return json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      );
     }
 
-    const userId = authHeader.split(" ")[1];
+    const { uid: userId } = authResult.user;
     const { reservationId } = params;
 
     // Get existing reservation
@@ -120,6 +197,11 @@ export async function DELETE({ params, request }) {
       return json({ success: false, error: "Unauthorized" }, { status: 403 });
     }
 
+    // Delete associated document if exists
+    if (reservation.scheduleDocument && reservation.scheduleDocument.path) {
+      await deletePDF(reservation.scheduleDocument.path);
+    }
+
     // Mark as cancelled instead of deleting
     await updateDoc(doc(db, "reservations", reservationId), {
       status: "cancelled",
@@ -131,6 +213,7 @@ export async function DELETE({ params, request }) {
       message: "Reservation cancelled successfully",
     });
   } catch (error) {
+    console.error("Reservation deletion error:", error);
     return json(
       {
         success: false,
