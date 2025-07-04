@@ -107,16 +107,16 @@ export async function POST({ request }) {
     }
 
     // Verify space exists
-    const spaceDoc = await getDoc(doc(db, "parkingSpaces", spaceDocId));
-    if (!spaceDoc.exists()) {
-      return json(
-        {
-          success: false,
-          error: "Parking space not found",
-        },
-        { status: 404 }
-      );
-    }
+    // const spaceDoc = await getDoc(doc(db, "parkingSpaces", spaceDocId));
+    // if (!spaceDoc.exists()) {
+    //   return json(
+    //     {
+    //       success: false,
+    //       error: "Parking space not found",
+    //     },
+    //     { status: 404 }
+    //   );
+    // }
 
     // Check space availability
     const isAvailable = await checkSpaceAvailability(
