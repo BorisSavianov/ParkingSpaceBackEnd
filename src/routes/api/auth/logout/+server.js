@@ -6,6 +6,7 @@ export async function POST() {
     const result = await logoutUser();
     return json(result, { status: 200 });
   } catch (error) {
+    response.headers.append("Access-Control-Allow-Origin", "*");
     return json(
       {
         success: false,
