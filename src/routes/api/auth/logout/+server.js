@@ -4,9 +4,9 @@ import { logoutUser } from "$lib/auth.js";
 export async function POST() {
   try {
     const result = await logoutUser();
+    response.headers.append("Access-Control-Allow-Origin", "*");
     return json(result, { status: 200 });
   } catch (error) {
-    response.headers.append("Access-Control-Allow-Origin", "*");
     return json(
       {
         success: false,
