@@ -4,8 +4,12 @@ import { logoutUser } from "$lib/auth.js";
 export async function POST() {
   try {
     const result = await logoutUser();
-    response.headers.append("Access-Control-Allow-Origin", "*");
-    return json(result, { status: 200 });
+
+    return json(
+      result,
+      { status: 200 },
+      { headers: { "Access-Control-Allow-Origin": "*" } }
+    );
   } catch (error) {
     return json(
       {
