@@ -181,13 +181,7 @@ export async function POST({ request }) {
           ...reservationData,
         },
       },
-      {
-        status: 201,
-        headers: {
-          "Access-Control-Allow-Origin": origin,
-          "Access-Control-Allow-Credentials": "true",
-        },
-      }
+      { status: 201 }
     );
   } catch (error) {
     console.error("Reservation creation error:", error);
@@ -241,19 +235,10 @@ export async function GET({ request }) {
         })
       );
 
-      return json(
-        {
-          success: true,
-          reservations: reservationsWithSpaces,
-        },
-        {
-          status: 200,
-          headers: {
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-          },
-        }
-      );
+      return json({
+        success: true,
+        reservations: reservationsWithSpaces,
+      });
     } catch (error) {
       console.error("Error fetching reservations:", error);
       return json(
@@ -276,15 +261,12 @@ export async function GET({ request }) {
   }
 }
 
-export async function OPTIONS({ request }) {
-  const origin = request.headers.get("origin");
-
+export async function OPTIONS() {
   return new Response(null, {
     headers: {
-      "Access-Control-Allow-Origin": origin || "",
+      "Access-Control-Allow-Origin": "*", // Specify the url you wish to permit
       "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Credentials": "true",
     },
   });
 }

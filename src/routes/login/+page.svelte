@@ -1,0 +1,197 @@
+<script>
+  import { goto } from '$app/navigation';
+
+  let registerData = {
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    department: '',
+    username: ''
+  };
+
+  let loginData = {
+    email: '',
+    password: ''
+  };
+
+  async function handleRegister(event) {
+    event.preventDefault();
+
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(registerData)
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      localStorage.setItem('token', result.token);
+      goto('/');
+    } else {
+      alert(result.error);
+    }
+  }
+
+  async function handleLogin(event) {
+    event.preventDefault();
+
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loginData)
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      localStorage.setItem('token', result.token);
+      goto('/');
+    } else {
+      alert(result.error);
+    }
+  }
+</script>
+
+<style>
+
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+.body{
+	margin: 0;
+	padding: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 100vh;
+	font-family: 'Poppins', sans-serif;
+	background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+}
+
+.main{
+	width: 350px;
+	height: 500px;
+	background: red;
+	overflow: hidden;
+	background: url("https://doc-08-2c-docs.googleusercontent.com/docs/securesc/68c90smiglihng9534mvqmq1946dmis5/fo0picsp1nhiucmc0l25s29respgpr4j/1631524275000/03522360960922298374/03522360960922298374/1Sx0jhdpEpnNIydS4rnN4kHSJtU1EyWka?e=view&authuser=0&nonce=gcrocepgbb17m&user=03522360960922298374&hash=tfhgbs86ka6divo3llbvp93mg4csvb38") no-repeat center/ cover;
+	border-radius: 10px;
+	box-shadow: 5px 20px 50px #000;
+}
+#chk{
+	display: none;
+}
+.signup{
+	position: relative;
+	width:100%;
+	height: 100%;
+}
+label{
+	color: #fff;
+	font-size: 2.3em;
+	justify-content: center;
+	display: flex;
+	margin: 50px;
+	font-weight: bold;
+	cursor: pointer;
+	transition: .5s ease-in-out;
+}
+input{
+	width: 60%;
+	height: 10px;
+	background: #e0dede;
+	justify-content: center;
+	display: flex;
+	margin: 20px auto;
+	padding: 12px;
+	border: none;
+	outline: none;
+	border-radius: 5px;
+}
+button{
+	width: 60%;
+	height: 40px;
+	margin: 10px auto;
+	justify-content: center;
+	display: block;
+	color: #fff;
+	background: #573b8a;
+	font-size: 1em;
+	font-weight: bold;
+	margin-top: 30px;
+	outline: none;
+	border: none;
+	border-radius: 5px;
+	transition: .2s ease-in;
+	cursor: pointer;
+}
+button:hover{
+	background: #6d44b8;
+}
+.login{
+	height: 460px;
+	background: #eee;
+	border-radius: 60% / 10%;
+	transform: translateY(-150px);
+	transition: .8s ease-in-out;
+}
+.login label{
+	color: #573b8a;
+	transform: scale(.6);
+}
+
+#chk:checked ~ .login{
+	transform: translateY(-500px);
+}
+#chk:checked ~ .login label{
+	transform: scale(1);	
+}
+#chk:checked ~ .signup label{
+	transform: scale(.6);
+}
+
+.grid-two{
+  display: grid;
+  grid-template-columns: auto auto;
+  margin: auto 40px;
+}
+</style>
+
+
+	<title>Login</title>
+
+
+  <div class="body">
+
+  
+	<div class="main">  	
+		<input type="checkbox" id="chk" aria-hidden="true">
+
+			<div class="signup">
+				<form on:submit={handleRegister}>
+					<label style="margin: 40px;" for="chk" aria-hidden="true">Sign up</label>
+          <div class="grid-two">
+            
+              <input style="margin: 0 auto;" type="text" name="txt" bind:value={registerData.firstName} placeholder="First name" required="">
+              <input style="margin: 0 auto;" type="text" name="txt" bind:value={registerData.lastName} placeholder="Last name" required="">
+              <input type="text" name="txt" bind:value={registerData.username} placeholder="User name" required="">
+              <input  type="text" name="txt" bind:value={registerData.department} placeholder="Department" required=""> 
+            
+              
+          </div>
+					<input type="email" name="email" bind:value={registerData.email} placeholder="Email" required="">
+					<input type="password" name="pswd" bind:value={registerData.password} placeholder="Password" required="">
+					<button type="submit">Sign up</button>
+				</form>
+			</div>
+
+			<div class="login">
+				<form on:submit={handleLogin}>
+					<label for="chk" aria-hidden="true">Login</label>
+					<input type="email" name="email" bind:value={loginData.email} placeholder="Email" required="">
+					<input type="password" name="pswd" bind:value={loginData.password} placeholder="Password" required="">
+					<button type="submit">Login</button>
+				</form>
+			</div>
+	</div>
+</div>
+
