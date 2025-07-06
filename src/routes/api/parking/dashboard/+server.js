@@ -1,97 +1,62 @@
 import { json } from "@sveltejs/kit";
-import { db } from "$lib/firebase.js";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { checkSpaceAvailability } from "$lib/parking.js";
 
 export async function GET({ url }) {
   try {
     const date =
       url.searchParams.get("date") || new Date().toISOString().split("T")[0];
 
-    // Get all parking spaces
-    const spacesRef = collection(db, "parkingSpaces");
-    const spacesSnapshot = await getDocs(spacesRef);
-    const spaces = spacesSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    // Define the parking spaces (assuming you have spaces 1-20, adjust as needed)
+    const TOTAL_SPACES = 20; // Adjust this number based on your parking lot
+    const spaces = [];
 
-    // Get all active reservations
-    const reservationsRef = collection(db, "reservations");
-    const reservationsQuery = query(
-      reservationsRef,
-      where("status", "==", "active")
-    );
-    const reservationsSnapshot = await getDocs(reservationsQuery);
-    const reservations = reservationsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    // Generate space data for each parking space
+    for (let i = 1; i <= TOTAL_SPACES; i++) {
+      const spaceId = `space-${i}`;
 
-    // Filter reservations for the selected date
-    const targetDate = new Date(date);
-    const dateReservations = reservations.filter((reservation) => {
-      const startDate = new Date(reservation.startDate);
-      const endDate = new Date(reservation.endDate);
-      return startDate <= targetDate && endDate >= targetDate;
-    });
+      // Check availability for each shift type
+      const isMorningAvailable = await checkSpaceAvailability(
+        spaceId,
+        date,
+        date,
+        "8:00-14:00"
+      );
 
-    // Build dashboard data
-    const dashboard = await Promise.all(
-      spaces.map(async (space) => {
-        const spaceReservations = dateReservations.filter(
-          (r) => r.spaceId === space.id
-        );
+      const isAfternoonAvailable = await checkSpaceAvailability(
+        spaceId,
+        date,
+        date,
+        "14:00-21:00"
+      );
 
-        const reservationsWithUsers = await Promise.all(
-          spaceReservations.map(async (reservation) => {
-            try {
-              const userDoc = await getDoc(
-                doc(db, "users", reservation.userId)
-              );
-              const userData = userDoc.exists() ? userDoc.data() : null;
+      const isFullDayAvailable = await checkSpaceAvailability(
+        spaceId,
+        date,
+        date,
+        "9:30-18:30"
+      );
 
-              return {
-                ...reservation,
-                user: userData
-                  ? {
-                      firstName: userData.firstName,
-                      lastName: userData.lastName,
-                      username: userData.username,
-                      department: userData.department,
-                    }
-                  : null,
-              };
-            } catch (error) {
-              return {
-                ...reservation,
-                user: null,
-              };
-            }
-          })
-        );
-
-        return {
-          ...space,
-          reservations: reservationsWithUsers,
-          isAvailable: {
-            morning: !reservationsWithUsers.some(
-              (r) => r.shiftType === "MORNING" || r.shiftType === "FULL_DAY"
-            ),
-            afternoon: !reservationsWithUsers.some(
-              (r) => r.shiftType === "AFTERNOON" || r.shiftType === "FULL_DAY"
-            ),
-            fullDay: reservationsWithUsers.length === 0,
-          },
-        };
-      })
-    );
+      spaces.push({
+        id: spaceId,
+        spaceNumber: i,
+        isAvailable: {
+          morning: isMorningAvailable,
+          afternoon: isAfternoonAvailable,
+          fullDay: isFullDayAvailable,
+        },
+        // Add any other space properties you need
+        type: "standard", // or "disabled", "electric", etc.
+        location: `Row ${Math.ceil(i / 10)}, Space ${i}`,
+      });
+    }
 
     return json({
       success: true,
       date,
-      spaces: dashboard.sort((a, b) => a.spaceNumber - b.spaceNumber),
+      spaces: spaces.sort((a, b) => a.spaceNumber - b.spaceNumber),
     });
   } catch (error) {
+    console.error("Dashboard error:", error);
     return json(
       {
         success: false,
@@ -105,8 +70,8 @@ export async function GET({ url }) {
 export async function OPTIONS() {
   return new Response(null, {
     headers: {
-      "Access-Control-Allow-Origin": "*", // Specify the url you wish to permit
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
