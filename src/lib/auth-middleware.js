@@ -54,9 +54,7 @@ export async function verifyAuthToken(token) {
  */
 export async function authenticateRequest(request) {
   try {
-    const authHeader =
-      request.headers.get("authorization") ||
-      request.headers.get("Authorization");
+    const authHeader = request.headers.get("Authorization");
     if (!authHeader?.toLowerCase().startsWith("bearer ")) {
       return {
         success: false,
