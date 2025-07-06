@@ -1,5 +1,6 @@
 <script>
   import { goto } from '$app/navigation';
+	import { user } from '$lib/stores/user.js';
 
   let registerData = {
     email: '',
@@ -46,7 +47,8 @@
     const result = await res.json();
 
     if (result.success) {
-      localStorage.setItem('token', result.token);
+			user.set(result.user);
+			localStorage.setItem('token', result.token);
       goto('/');
     } else {
       alert(result.error);

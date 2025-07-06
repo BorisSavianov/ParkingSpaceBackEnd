@@ -71,7 +71,7 @@ export async function loginUser(email, password) {
 
     // Get ID token
     const idToken = await user.getIdToken();
-
+    console.log(auth.currentUser);
     return {
       success: true,
       user: {
@@ -108,6 +108,7 @@ export async function logoutUser() {
 export async function getCurrentUserToken() {
   try {
     const user = auth.currentUser;
+
     if (!user) return null;
 
     return await user.getIdToken();
@@ -214,7 +215,7 @@ export function createAuthHeaders(token) {
  * @returns {Promise<Response>}
  */
 export async function authenticatedFetch(url, options = {}) {
-  const token = await getCurrentUserToken();
+  const token = (await getCurrentUserToken()) || localStorage.getItem("token");
 
   if (!token) {
     throw new Error("No authentication token available");
