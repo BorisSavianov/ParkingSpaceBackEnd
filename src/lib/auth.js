@@ -71,7 +71,7 @@ export async function loginUser(email, password) {
 
     // Get ID token
     const idToken = await user.getIdToken();
-    console.log(auth.currentUser);
+
     return {
       success: true,
       user: {
@@ -141,6 +141,7 @@ export async function refreshUserToken() {
 export async function getCurrentUser() {
   try {
     const user = auth.currentUser;
+
     if (!user) return null;
 
     const userDoc = await getDoc(doc(db, "users", user.uid));

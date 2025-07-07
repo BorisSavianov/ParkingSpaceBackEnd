@@ -79,11 +79,13 @@
   <div class="header-container">
     <!-- Logo -->
     <div class="logo-container">
+      
       <img 
         src="/logo.png" 
         alt="Company Logo" 
         class="logo" 
         in:fade={{ duration: 500 }}
+        on:click={goto('/')}
       />
     </div>
     
@@ -121,14 +123,14 @@
   /* Base Header Styles */
   .header {
     z-index: 100; /* Променено от 1000 на 100 */
-    background: linear-gradient(135deg, #3a6bc8 0%, #4fc3f7 100%);
+    background: linear-gradient(90deg, #2563eb 0%, #4338ca 100%);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     font-family: 'Poppins', sans-serif;
   }
   
   .header.scrolled {
-    background: linear-gradient(135deg, #3a6bc8 0%, #3a6bc8 100%);
+    background: linear-gradient(90deg, #2563eb 0%, #2563eb 100%);
   }
   
   /* Header Container */
