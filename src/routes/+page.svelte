@@ -123,6 +123,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Main - ReserveParkingSpace</title>
+</svelte:head>
+
 <Header />
 
 <div class="page-container" class:dark={$theme === 'dark'}>

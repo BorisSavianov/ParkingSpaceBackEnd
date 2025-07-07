@@ -165,7 +165,7 @@
 </script>
 
 <svelte:head>
-  <title>Profile - Your App</title>
+  <title>Profile - ReserveParkingSpace</title>
 </svelte:head>
 
 <Header/>
