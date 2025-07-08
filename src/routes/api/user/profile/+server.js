@@ -3,6 +3,7 @@ import { json } from "@sveltejs/kit";
 import { authenticateRequest } from "$lib/auth-middleware.js";
 import { db } from "$lib/firebase.js";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { auth } from "$lib/firebase.js";
 
 export async function GET({ request }) {
   try {
@@ -119,6 +120,8 @@ export async function DELETE({ request }) {
       isActive: false,
       deletedAt: new Date().toISOString(),
     });
+
+    await auth.signOut();
 
     return json({
       success: true,

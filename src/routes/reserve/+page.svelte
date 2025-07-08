@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import Header from '$lib/components/Header.svelte';
 
   $: space = $page.url.searchParams.get('space');
 
@@ -65,6 +66,7 @@
 
   function handleDateClick(day) {
     const clickedDate = new Date(currentYear, currentMonth, day);
+   
     
     // Don't allow selecting past dates
     const today = new Date();
@@ -115,94 +117,104 @@
     }
   }
 
-  function getDaysDifference(startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-  }
+  function formatDateForAPI(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+
+function getDaysDifference(startDate, endDate) {
+  // Parse the YYYY-MM-DD format strings
+  const start = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
+  return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+}
 
   async function makeReservation() {
-    if (!selectedStartDate || !selectedEndDate || !selectedRangeType) {
-      error = 'Please select dates and shift type';
-      return;
-    }
-
-    const token = getAuthToken();
-    if (!token) {
-      error = 'Please log in to make a reservation';
-      return;
-    }
-
-    isLoading = true;
-    error = null;
-
-    try {
-      const startDate = selectedStartDate.toISOString().split('T')[0];
-      const endDate = selectedEndDate.toISOString().split('T')[0];
-      const daysDiff = getDaysDifference(startDate, endDate);
-
-      // Check if document is required for reservations longer than 2 days
-      if (daysDiff > 2 && !uploadedFile) {
-        error = 'Schedule document (PDF) is required for reservations longer than 2 days';
-        isLoading = false;
-        return;
-      }
-
-      // Prepare form data
-      const formData = new FormData();
-      formData.append('spaceId', space);
-      formData.append('startDate', startDate);
-      formData.append('endDate', endDate);
-      formData.append('shiftType', selectedRangeType.value);
-      
-      if (uploadedFile) {
-        formData.append('scheduleDocument', uploadedFile);
-      }
-
-      const response = await fetch('/api/parking/reservations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Add to saved ranges for visual display
-        savedRanges.push({
-          id: result.reservation.id,
-          startTimestamp: selectedStartDate.getTime(),
-          endTimestamp: selectedEndDate.getTime(),
-          color: selectedRangeType.color,
-          name: selectedRangeType.name,
-          shiftType: selectedRangeType.value,
-          icon: getShiftIcon(selectedRangeType.value)
-        });
-        
-        // Save to memory (not localStorage since it's not supported)
-        savedRanges = [...savedRanges];
-        
-        // Close modal and reset
-        showModal = false;
-        selectedStartDate = null;
-        selectedEndDate = null;
-        selectedRangeType = null;
-        uploadedFile = null;
-        if (fileInput) fileInput.value = '';
-        
-        alert('Reservation created successfully!');
-      } else {
-        error = result.error || 'Failed to create reservation';
-      }
-    } catch (err) {
-      console.error('Reservation error:', err);
-      error = 'Network error. Please try again.';
-    } finally {
-      isLoading = false;
-    }
+  if (!selectedStartDate || !selectedEndDate || !selectedRangeType) {
+    error = 'Please select dates and shift type';
+    return;
   }
+
+  const token = getAuthToken();
+  if (!token) {
+    error = 'Please log in to make a reservation';
+    return;
+  }
+
+  isLoading = true;
+  error = null;
+
+  try {
+    // Fix: Use local date formatting instead of toISOString() to avoid timezone issues
+    const startDate = formatDateForAPI(selectedStartDate);
+    const endDate = formatDateForAPI(selectedEndDate);
+    const daysDiff = getDaysDifference(startDate, endDate);
+
+    // Check if document is required for reservations longer than 2 days
+    if (daysDiff > 2 && !uploadedFile) {
+      error = 'Schedule document (PDF) is required for reservations longer than 2 days';
+      isLoading = false;
+      return;
+    }
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('spaceId', space);
+    formData.append('startDate', startDate);
+    formData.append('endDate', endDate);
+    formData.append('shiftType', selectedRangeType.value);
+    
+    if (uploadedFile) {
+      formData.append('scheduleDocument', uploadedFile);
+    }
+
+    const response = await fetch('/api/parking/reservations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Add to saved ranges for visual display
+      savedRanges.push({
+        id: result.reservation.id,
+        startTimestamp: selectedStartDate.getTime(),
+        endTimestamp: selectedEndDate.getTime(),
+        color: selectedRangeType.color,
+        name: selectedRangeType.name,
+        shiftType: selectedRangeType.value,
+        icon: getShiftIcon(selectedRangeType.value)
+      });
+      
+      // Save to memory (not localStorage since it's not supported)
+      savedRanges = [...savedRanges];
+      
+      // Close modal and reset
+      showModal = false;
+      selectedStartDate = null;
+      selectedEndDate = null;
+      selectedRangeType = null;
+      uploadedFile = null;
+      if (fileInput) fileInput.value = '';
+      
+      alert('Reservation created successfully!');
+    } else {
+      error = result.error || 'Failed to create reservation';
+    }
+  } catch (err) {
+    console.error('Reservation error:', err);
+    error = 'Network error. Please try again.';
+  } finally {
+    isLoading = false;
+  }
+}
 
   function getShiftIcon(shiftType) {
     switch (shiftType) {
@@ -332,6 +344,8 @@
 <svelte:head>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </svelte:head>
+
+<Header/>
 
 <div class="app-container">
   <header class="app-header">

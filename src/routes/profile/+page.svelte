@@ -2,8 +2,9 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
-  import { authenticatedFetch, onAuthStateChange } from '$lib/auth.js';
+  import { authenticatedFetch, logoutUser, onAuthStateChange } from '$lib/auth.js';
   import Header from '$lib/components/Header.svelte';
+  import { theme } from '$lib/stores/theme';
 
   let user = null;
   let loading = true;
@@ -170,55 +171,23 @@
 
 <Header/>
 
-
-
-<!-- Main Content -->
-<div class="main-content">
-  {#if !isAuthChecked}
-    <div class="loading-container">
-      <div class="spinner"></div>
-      <p>Checking authentication...</p>
-    </div>
-  {:else if loading}
-    <div class="loading-container">
-      <div class="spinner"></div>
-      <p>Loading profile...</p>
-    </div>
-  {:else if error && !user}
-    <div class="card">
-      <div class="card-content">
-        <div class="alert alert-error">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M15 9l-6 6"/>
-            <path d="M9 9l6 6"/>
-          </svg>
-          {error}
-        </div>
+<div class="page-container" class:dark={$theme === 'dark'}>
+  <!-- Main Content -->
+  <div class="main-content">
+    {#if !isAuthChecked}
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Checking authentication...</p>
       </div>
-    </div>
-  {:else if user}
-    {#if success}
-      <div class="success-section">
-        <div class="card success-card">
-          <div class="card-content">
-            <div class="alert alert-success">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 11l3 3l8-8"/>
-                <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9c1.66 0 3.22.46 4.56 1.25"/>
-              </svg>
-              {success}
-            </div>
-          </div>
-        </div>
+    {:else if loading}
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Loading profile...</p>
       </div>
-    {/if}
-
-    {#if error}
+    {:else if error && !user}
       <div class="card">
         <div class="card-content">
           <div class="alert alert-error">
-            
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
               <path d="M15 9l-6 6"/>
@@ -228,198 +197,244 @@
           </div>
         </div>
       </div>
-    {/if}
-
-    <!-- Profile Card -->
-    <div class="card">
-      <div class="card-header card-header-grid">
-        <div >
-        <h2 class="card-title">
-          {editing ? 'Edit Profile' : 'Profile Information'}
-        </h2>
-        <p class="card-subtitle">
-          {editing ? 'Update your personal information' : 'View and manage your account details'}
-        </p>
-      </div>
-        {#if !editing && user}
-      <button class="edit-button" on:click={startEditing}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
-      </button>
-    {/if}
-      </div>
-      <div class="card-content">
-        {#if editing}
-          <!-- Edit Form -->
-          <form on:submit|preventDefault={saveProfile} class="profile-form">
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="firstName" class="form-label">First Name</label>
-                <input
-                  id="firstName"
-                  type="text"
-                  bind:value={editForm.firstName}
-                  maxlength="30"
-                  required
-                  class="form-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="lastName" class="form-label">Last Name</label>
-                <input
-                  id="lastName"
-                  type="text"
-                  bind:value={editForm.lastName}
-                  maxlength="50"
-                  required
-                  class="form-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="username" class="form-label">Username</label>
-                <input
-                  id="username"
-                  type="text"
-                  bind:value={editForm.username}
-                  maxlength="50"
-                  required
-                  class="form-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="department" class="form-label">Department</label>
-                <select id="department" bind:value={editForm.department} required class="form-select">
-                  <option value="">Select Department</option>
-                  {#each allowedDepartments as dept}
-                    <option value={dept}>{dept.charAt(0).toUpperCase() + dept.slice(1)}</option>
-                  {/each}
-                </select>
-              </div>
-
-              <div class="form-group form-group-full">
-                <label class="form-label">Email</label>
-                <input
-                  type="email"
-                  value={user.email}
-                  disabled
-                  class="form-input form-input-disabled"
-                />
-                <small class="form-help">Email cannot be changed</small>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary" disabled={saving}>
-                {#if saving}
-                  <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                  </svg>
-                  Saving...
-                {:else}
-                  <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 11l3 3l8-8"/>
-                    <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9c1.66 0 3.22.46 4.56 1.25"/>
-                  </svg>
-                  Save Changes
-                {/if}
-              </button>
-              <button type="button" class="btn btn-secondary" on:click={cancelEditing}>
-                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 6L6 18"/>
-                  <path d="M6 6l12 12"/>
+    {:else if user}
+      {#if success}
+        <div class="success-section">
+          <div class="card success-card">
+            <div class="card-content">
+              <div class="alert alert-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 11l3 3l8-8"/>
+                  <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9c1.66 0 3.22.46 4.56 1.25"/>
                 </svg>
-                Cancel
-              </button>
-            </div>
-          </form>
-        {:else}
-          <!-- View Mode -->
-          <div class="profile-info">
-            <div class="info-grid">
-              <div class="info-group">
-                <label class="info-label">Full Name</label>
-                <p class="info-value">{user.firstName} {user.lastName}</p>
+                {success}
               </div>
-
-              <div class="info-group">
-                <label class="info-label">Username</label>
-                <p class="info-value">{user.username}</p>
-              </div>
-
-              <div class="info-group">
-                <label class="info-label">Email</label>
-                <p class="info-value">{user.email}</p>
-              </div>
-
-              <div class="info-group">
-                <label class="info-label">Department</label>
-                <div class="badge-container">
-                  <span class="badge department-{user.department}">
-                    {user.department?.charAt(0).toUpperCase() + user.department?.slice(1)}
-                  </span>
-                </div>
-              </div>
-
-              <div class="info-group">
-                <label class="info-label">Role</label>
-                <div class="badge-container">
-                  <span class="badge role-{user.role}">
-                    {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
-                  </span>
-                </div>
-              </div>
-
-              {#if user.createdAt}
-                <div class="info-group">
-                  <label class="info-label">Member Since</label>
-                  <p class="info-value">{new Date(user.createdAt).toLocaleDateString()}</p>
-                </div>
-              {/if}
-
-              {#if user.updatedAt}
-                <div class="info-group">
-                  <label class="info-label">Last Updated</label>
-                  <p class="info-value">{new Date(user.updatedAt).toLocaleDateString()}</p>
-                </div>
-              {/if}
             </div>
           </div>
-        {/if}
-      </div>
-    </div>
+        </div>
+      {/if}
 
-    {#if !editing}
-      <!-- Danger Zone -->
-      <div class="card danger-card">
-        <div class="card-header">
-          <h2 class="card-title danger-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            Danger Zone
+      {#if error}
+        <div class="card">
+          <div class="card-content">
+            <div class="alert alert-error">
+              
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M15 9l-6 6"/>
+                <path d="M9 9l6 6"/>
+              </svg>
+              {error}
+            </div>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Profile Card -->
+      <div class="card">
+        <div class="card-header card-header-grid">
+          <div >
+          <h2 class="card-title">
+            {editing ? 'Edit Profile' : 'Profile Information'}
           </h2>
-          <p class="card-subtitle">Once you deactivate your account, there is no going back. Please be certain.</p>
+          <p class="card-subtitle">
+            {editing ? 'Update your personal information' : 'View and manage your account details'}
+          </p>
+        </div>
+          {#if !editing && user}
+        <button class="edit-button" on:click={startEditing}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+      {/if}
         </div>
         <div class="card-content">
-          <button class="btn btn-danger" on:click={deactivateAccount}>
-            <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 6h18"/>
-              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-            </svg>
-            Deactivate Account
-          </button>
+          {#if editing}
+            <!-- Edit Form -->
+            <form on:submit|preventDefault={saveProfile} class="profile-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="firstName" class="form-label">First Name</label>
+                  <input
+                    id="firstName"
+                    type="text"
+                    bind:value={editForm.firstName}
+                    maxlength="30"
+                    required
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="lastName" class="form-label">Last Name</label>
+                  <input
+                    id="lastName"
+                    type="text"
+                    bind:value={editForm.lastName}
+                    maxlength="50"
+                    required
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="username" class="form-label">Username</label>
+                  <input
+                    id="username"
+                    type="text"
+                    bind:value={editForm.username}
+                    maxlength="50"
+                    required
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="department" class="form-label">Department</label>
+                  <select id="department" bind:value={editForm.department} required class="form-select">
+                    <option value="">Select Department</option>
+                    {#each allowedDepartments as dept}
+                      <option value={dept}>{dept.charAt(0).toUpperCase() + dept.slice(1)}</option>
+                    {/each}
+                  </select>
+                </div>
+
+                <div class="form-group form-group-full">
+                  <label class="form-label">Email</label>
+                  <input
+                    type="email"
+                    value={user.email}
+                    disabled
+                    class="form-input form-input-disabled"
+                  />
+                  <small class="form-help">Email cannot be changed</small>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" disabled={saving}>
+                  {#if saving}
+                    <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                    </svg>
+                    Saving...
+                  {:else}
+                    <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 11l3 3l8-8"/>
+                      <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9c1.66 0 3.22.46 4.56 1.25"/>
+                    </svg>
+                    Save Changes
+                  {/if}
+                </button>
+                <button type="button" class="btn btn-secondary" on:click={cancelEditing}>
+                  <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18"/>
+                    <path d="M6 6l12 12"/>
+                  </svg>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          {:else}
+            <!-- View Mode -->
+            <div class="profile-info">
+              <div class="info-grid">
+                <div class="info-group">
+                  <label class="info-label">Full Name</label>
+                  <p class="info-value">{user.firstName} {user.lastName}</p>
+                </div>
+
+                <div class="info-group">
+                  <label class="info-label">Username</label>
+                  <p class="info-value">{user.username}</p>
+                </div>
+
+                <div class="info-group">
+                  <label class="info-label">Email</label>
+                  <p class="info-value">{user.email}</p>
+                </div>
+
+                <div class="info-group">
+                  <label class="info-label">Department</label>
+                  <div class="badge-container">
+                    <span class="badge department-{user.department}">
+                      {user.department?.charAt(0).toUpperCase() + user.department?.slice(1)}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="info-group">
+                  <label class="info-label">Role</label>
+                  <div class="badge-container">
+                    <span class="badge role-{user.role}">
+                      {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
+                    </span>
+                  </div>
+                </div>
+
+                {#if user.createdAt}
+                  <div class="info-group">
+                    <label class="info-label">Member Since</label>
+                    <p class="info-value">{new Date(user.createdAt).toLocaleDateString()}</p>
+                  </div>
+                {/if}
+
+                {#if user.updatedAt}
+                  <div class="info-group">
+                    <label class="info-label">Last Updated</label>
+                    <p class="info-value">{new Date(user.updatedAt).toLocaleDateString()}</p>
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/if}
         </div>
       </div>
+
+      {#if !editing}
+      <div class="controls-grid">
+      <!-- logout -->
+        <div class="card logout-card">
+          <div class="card-header">
+            <h2 class="card-title logout-title">
+              Logout
+            </h2>
+          </div>
+          <div class="card-content" style="padding-bottom: 0;">
+            <button class="btn btn-logout" on:click={logoutUser}>
+              Logout
+            </button>
+          </div>
+        </div>
+        <!-- Danger Zone -->
+        <div class="card danger-card">
+          <div class="card-header">
+            <h2 class="card-title danger-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              Danger Zone
+            </h2>
+            <p class="card-subtitle">Once you deactivate your account, there is no going back. Please be certain.</p>
+          </div>
+          <div class="card-content">
+            <button class="btn btn-danger" on:click={deactivateAccount}>
+              <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              </svg>
+              Deactivate Account
+            </button>
+          </div>
+        </div></div>
+      {/if}
     {/if}
-  {/if}
+  </div>
 </div>
 
 <style>
@@ -431,9 +446,53 @@
 
   :global(body) {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-    min-height: 100vh;
+    margin: 0;
+    padding: 0;
   }
+
+  .page-container {
+    background:#dbeafe;
+    min-height: 100vh;
+    transition: background 0.3s ease;
+  }
+
+  .page-container.dark {
+    background:  #1e293b;
+  }
+
+ .page-container.dark .card {
+  background: #334155;
+}
+
+ .page-container.dark .card .card-title {
+  color: #e2e8f0
+}
+
+.page-container.dark .card .card-subtitle {
+  color: #94a3b8
+}
+
+.page-container.dark .card .info-value {
+  color: #94a3b8
+}
+
+.page-container.dark .logout-card {
+  background-color: #213d8a;
+}
+
+.page-container.dark .danger-card {
+  background-color: #ce6262;
+}
+
+.page-container.dark .danger-card .card-subtitle {
+  color: #e2e8f0;
+}
+
+.page-container.dark .card label {
+  color: #e2e8f0
+}
+
+
 
   /* Header */
   .header {
@@ -528,7 +587,7 @@
 
   .card-header  {
     padding: 1.5rem 1.5rem 1rem;
-    border-bottom: 1px solid #f3f4f6;
+    
   }
 
   .card-header-grid{
@@ -759,6 +818,12 @@
     color: #dc2626;
   }
 
+  .controls-grid{
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 20px;
+  }
+
   /* Buttons */
   .btn {
     display: inline-flex;
@@ -826,6 +891,25 @@
 
   .danger-title {
     color: #dc2626;
+  }
+
+  .logout-card {
+    border: 1px solid #7091eb;
+    background: linear-gradient(90deg, #b7cafd 0%, #b7cafd 100%);
+  }
+
+  .logout-title {
+    color: #1d4ed8;
+  }
+
+  .btn-logout {
+    background: linear-gradient(90deg, #809dec 0%, #1d4ed8 100%);
+    color: white;
+  }
+
+  .btn-logout:hover:not(:disabled) {
+    background: linear-gradient(90deg, #5d84f0 0%, #0040f0 100%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
 
   .edit-button{

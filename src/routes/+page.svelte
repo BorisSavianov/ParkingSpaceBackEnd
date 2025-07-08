@@ -4,12 +4,14 @@
   import Header from '$lib/components/Header.svelte';
   import { theme } from '$lib/stores/theme';
   
-  let selectedDate = new Date().toISOString().split('T')[0];
+  let selectedStartDate = new Date().toISOString().split('T')[0];
+  let selectedEndDate = new Date().toISOString().split('T')[0];
   let selectedSpace = null;
   let selectedShift = 'full';
   let parkingSpaces = [];
   let loading = false;
   let error = null;
+  let dateRangeData = new Map(); // Store availability for each date
 
   const SHIFT_TYPES = {
     'morning': { name: 'Morning', time: '8:00 AM - 2:00 PM', api: '8:00-14:00' },
@@ -21,32 +23,127 @@
     loadParkingAvailability();
   });
 
-  $: if (selectedDate || selectedShift) {
+  $: if (selectedStartDate || selectedEndDate || selectedShift) {
     loadParkingAvailability();
     selectedSpace = null; // Reset selection when date/shift changes
   }
 
+  // Generate array of dates between start and end date
+  function getDateRange(startDate, endDate) {
+    const dates = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+      dates.push(dt.toISOString().split('T')[0]);
+    }
+    
+    return dates;
+  }
+
   async function loadParkingAvailability() {
-    if (!selectedDate) return;
+    if (!selectedStartDate || !selectedEndDate) return;
+    
+    // Validate date range
+    if (new Date(selectedStartDate) > new Date(selectedEndDate)) {
+      error = 'Start date must be before or equal to end date';
+      return;
+    }
     
     loading = true;
     error = null;
+    dateRangeData.clear();
 
     try {
-      const response = await fetch(`/api/parking/dashboard?date=${selectedDate}`);
-      const data = await response.json();
+      const dateRange = getDateRange(selectedStartDate, selectedEndDate);
+      
+      // Fetch availability for each date in the range
+      const fetchPromises = dateRange.map(async (date) => {
+        try {
+          const response = await fetch(`/api/parking/dashboard?date=${date}`);
+          const data = await response.json();
+          
+          if (data.success) {
+            dateRangeData.set(date, data.spaces);
+          } else {
+            throw new Error(data.error || `Failed to load data for ${date}`);
+          }
+        } catch (err) {
+          console.error(`Error loading data for ${date}:`, err);
+          throw err;
+        }
+      });
 
-      if (data.success) {
-        parkingSpaces = data.spaces;
-      } else {
-        error = data.error || 'Failed to load parking availability';
-      }
+      await Promise.all(fetchPromises);
+      
+      // Combine availability across all dates
+      parkingSpaces = combineAvailabilityData();
+      
     } catch (err) {
-      error = 'Failed to connect to server';
+      error = 'Failed to load parking availability for date range';
       console.error('Error loading parking availability:', err);
     } finally {
       loading = false;
     }
+  }
+
+  function combineAvailabilityData() {
+    if (dateRangeData.size === 0) return [];
+    
+    // Get the first date's spaces as a template
+    const firstDateSpaces = Array.from(dateRangeData.values())[0];
+    
+    return firstDateSpaces.map(spaceTemplate => {
+      const spaceNumber = spaceTemplate.spaceNumber;
+      
+      // For each space, check availability across all dates
+      const combinedAvailability = {
+        fullDay: true,
+        morning: true,
+        afternoon: true
+      };
+      
+      const allReservations = [];
+      
+      // Check each date for this space
+      for (const [date, spaces] of dateRangeData) {
+        const spaceForDate = spaces.find(s => s.spaceNumber === spaceNumber);
+        
+        if (spaceForDate) {
+          // Space is only available for the range if it's available on ALL dates
+          combinedAvailability.fullDay = combinedAvailability.fullDay && spaceForDate.isAvailable?.fullDay;
+          combinedAvailability.morning = combinedAvailability.morning && spaceForDate.isAvailable?.morning;
+          combinedAvailability.afternoon = combinedAvailability.afternoon && spaceForDate.isAvailable?.afternoon;
+          
+          // Collect all reservations with date context
+          if (spaceForDate.reservations) {
+            spaceForDate.reservations.forEach(reservation => {
+              allReservations.push({
+                ...reservation,
+                date: date,
+                dateFormatted: formatDate(date)
+              });
+            });
+          }
+        } else {
+          // If space data is missing for any date, mark as unavailable
+          combinedAvailability.fullDay = false;
+          combinedAvailability.morning = false;
+          combinedAvailability.afternoon = false;
+        }
+      }
+      
+      return {
+        ...spaceTemplate,
+        isAvailable: combinedAvailability,
+        reservations: allReservations,
+        dateRange: {
+          start: selectedStartDate,
+          end: selectedEndDate,
+          totalDays: dateRangeData.size
+        }
+      };
+    });
   }
 
   function getSpaceAvailability(space) {
@@ -81,7 +178,8 @@
     return {
       isAvailable,
       reservedBy: relevantReservations[0]?.user || null,
-      reservationCount: relevantReservations.length
+      reservationCount: relevantReservations.length,
+      conflictingDates: relevantReservations.map(r => r.dateFormatted || r.date).join(', ')
     };
   }
 
@@ -100,7 +198,8 @@
     }
     
     const apiShift = SHIFT_TYPES[selectedShift].api;
-    goto(`/reserve?space=${selectedSpace}&date=${selectedDate}&shift=${encodeURIComponent(apiShift)}`);
+    // For date ranges, we'll pass both start and end dates
+    goto(`/reserve?space=${selectedSpace}&startDate=${selectedStartDate}&endDate=${selectedEndDate}&shift=${encodeURIComponent(apiShift)}`);
   }
 
   function formatDate(dateString) {
@@ -111,7 +210,14 @@
       month: 'long', 
       day: 'numeric' 
     };
-    return date.toLocaleDateString('en-US', options);
+    return date.toLocaleDateString('en-UK', options);
+  }
+
+  function formatDateRange() {
+    if (selectedStartDate === selectedEndDate) {
+      return formatDate(selectedStartDate);
+    }
+    return `${formatDate(selectedStartDate)} - ${formatDate(selectedEndDate)}`;
   }
 
   function getAvailableCount() {
@@ -121,6 +227,19 @@
   function getOccupiedCount() {
     return parkingSpaces.filter(space => !getSpaceAvailability(space)).length;
   }
+
+  function getDayCount() {
+    const start = new Date(selectedStartDate);
+    const end = new Date(selectedEndDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  }
+
+  
+  $: formattedDateRange = selectedStartDate === selectedEndDate
+    ? formatDate(selectedStartDate)
+    : `${formatDate(selectedStartDate)} - ${formatDate(selectedEndDate)}`;
 </script>
 
 <svelte:head>
@@ -130,14 +249,13 @@
 <Header />
 
 <div class="page-container" class:dark={$theme === 'dark'}>
-  
-
   <!-- Main Content -->
   <div class="main-content">
     <!-- Controls Card -->
     <div class="card">
       <div class="card-header">
         <h2 class="card-title">Select Your Preferences</h2>
+        <p class="card-subtitle">Choose date range and shift for parking availability</p>
       </div>
       <div class="card-content">
         <div class="controls-grid">
@@ -158,15 +276,32 @@
             </div>
           </div>
 
-          <!-- Date Selector -->
-          <div class="date-selector">
-            <label class="shift-label">Choose date:</label>
-            <input 
-              type="date" 
-              bind:value={selectedDate}
-              min={new Date().toISOString().split('T')[0]}
-              class="date-input"
-            />
+          <!-- Date Range Selector -->
+          <div class="date-range-selector">
+            <label class="shift-label">Choose date range:</label>
+            <div class="date-inputs">
+              <div class="date-input-group">
+                <label class="date-label">From:</label>
+                <input 
+                  type="date" 
+                  bind:value={selectedStartDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  class="date-input"
+                />
+              </div>
+              <div class="date-input-group">
+                <label class="date-label">To:</label>
+                <input 
+                  type="date" 
+                  bind:value={selectedEndDate}
+                  min={selectedStartDate}
+                  class="date-input"
+                />
+              </div>
+            </div>
+            <div class="date-range-info">
+              <span class="range-days">{getDayCount()} day{getDayCount() > 1 ? 's' : ''} selected</span>
+            </div>
           </div>
         </div>
       </div>
@@ -176,7 +311,12 @@
     <div class="card">
       <div class="card-header">
         <h2 class="card-title">Parking Lot Map</h2>
-        <p class="card-subtitle">Click on an available space to select it</p>
+        <p class="card-subtitle">
+          Showing availability for {formattedDateRange}
+          {#if getDayCount() > 1}
+            <br><small>Spaces shown as available are free for ALL selected dates</small>
+          {/if}
+        </p>
       </div>
       <div class="card-content">
         <div class="parking-map">
@@ -184,11 +324,11 @@
           <div class="map-legend">
             <div class="legend-item">
               <div class="legend-color available"></div>
-              <span class="legend-text">Available</span>
+              <span class="legend-text">Available (all dates)</span>
             </div>
             <div class="legend-item">
               <div class="legend-color occupied"></div>
-              <span class="legend-text">Occupied</span>
+              <span class="legend-text">Occupied (any date)</span>
             </div>
             <div class="legend-item">
               <div class="legend-color selected"></div>
@@ -200,7 +340,7 @@
           {#if loading}
             <div class="status-overlay">
               <div class="spinner"></div>
-              <p>Loading parking availability...</p>
+              <p>Loading parking availability for {getDayCount()} day{getDayCount() > 1 ? 's' : ''}...</p>
             </div>
           {:else if error}
             <div class="status-overlay">
@@ -214,7 +354,7 @@
               
               <!-- Left Side (Spaces 11-20) -->
               <div class="parking-side parking-left">
-                {#each parkingSpaces.filter(space => space.spaceNumber >= 11 && space.spaceNumber <= 20) as space}
+                {#each parkingSpaces.filter(space => space.spaceNumber >= 11 && space.spaceNumber <= 20).reverse() as space}
                   {@const status = getSpaceStatus(space)}
                   <button
                     class="parking-space"
@@ -224,8 +364,8 @@
                     on:click={() => selectSpace(space.spaceNumber)}
                     disabled={!status.isAvailable}
                     title={status.isAvailable 
-                      ? `Space ${space.spaceNumber} - Available` 
-                      : `Space ${space.spaceNumber} - Reserved${status.reservedBy ? ` by ${status.reservedBy.firstName} ${status.reservedBy.lastName}` : ''}`
+                      ? `Space ${space.spaceNumber} - Available for all selected dates` 
+                      : `Space ${space.spaceNumber} - Occupied on: ${status.conflictingDates || 'some dates'}`
                     }
                   >
                     {space.spaceNumber}
@@ -238,7 +378,7 @@
 
               <!-- Right Side (Spaces 1-10) -->
               <div class="parking-side parking-right">
-                {#each parkingSpaces.filter(space => space.spaceNumber >= 1 && space.spaceNumber <= 10) as space}
+                {#each parkingSpaces.filter(space => space.spaceNumber >= 1 && space.spaceNumber <= 10).reverse() as space}
                   {@const status = getSpaceStatus(space)}
                   <button
                     class="parking-space"
@@ -248,8 +388,8 @@
                     on:click={() => selectSpace(space.spaceNumber)}
                     disabled={!status.isAvailable}
                     title={status.isAvailable 
-                      ? `Space ${space.spaceNumber} - Available` 
-                      : `Space ${space.spaceNumber} - Reserved${status.reservedBy ? ` by ${status.reservedBy.firstName} ${status.reservedBy.lastName}` : ''}`
+                      ? `Space ${space.spaceNumber} - Available for all selected dates` 
+                      : `Space ${space.spaceNumber} - Occupied on: ${status.conflictingDates || 'some dates'}`
                     }
                   >
                     {space.spaceNumber}
@@ -266,6 +406,9 @@
               <span>Available: <span class="stat-count">{getAvailableCount()}</span></span>
               <span>Occupied: <span class="stat-count">{getOccupiedCount()}</span></span>
               <span>Total: {parkingSpaces.length}</span>
+              {#if getDayCount() > 1}
+                <span class="range-info">({getDayCount()} days)</span>
+              {/if}
             </div>
           {/if}
         </div>
@@ -280,7 +423,10 @@
             <p class="reserve-title">
               Space {selectedSpace} selected for {SHIFT_TYPES[selectedShift].name.toLowerCase()} shift
             </p>
-            <p class="reserve-date">{formatDate(selectedDate)}</p>
+            <p class="reserve-date">{formatDateRange()}</p>
+            {#if getDayCount() > 1}
+              <p class="reserve-duration">Duration: {getDayCount()} consecutive days</p>
+            {/if}
             <button class="reserve-button" on:click={reserveSpace}>
               Reserve This Space
             </button>
@@ -292,6 +438,58 @@
 </div>
 
 <style>
+  .date-range-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .date-inputs {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .date-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .date-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  
+  .date-range-info {
+    margin-top: 0.5rem;
+  }
+  
+  .range-days {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  
+  .range-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
+  }
+  
+  .reserve-duration {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0.5rem 0;
+  }
+  
+  @media (max-width: 640px) {
+    .date-inputs {
+      flex-direction: column;
+    }
+  }
+
   :global(body) {
     margin: 0;
     padding: 0;
