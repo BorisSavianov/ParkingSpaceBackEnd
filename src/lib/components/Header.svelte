@@ -94,6 +94,9 @@
       <button on:click={toggleTheme} class="nav-button icon-button" aria-label="Toggle theme">
         <img src="/dark-mode.png" alt="Theme" class="button-icon bri" />
       </button>
+      <a on:click={goto('/admin')} class="nav-button icon-button" aria-label="User profile">
+        <img src="/user.png" alt="Profile" class="button-icon" />
+      </a>
       <a on:click={goto('/profile')} class="nav-button icon-button" aria-label="User profile">
         <img src="/user.png" alt="Profile" class="button-icon" />
       </a>
@@ -244,7 +247,6 @@
   /* Mobile Menu */
   .mobile-menu {
     position: absolute;
-    top: 100%;
     left: 0;
     width: 100%;
     background: linear-gradient(135deg, #3a6bc8 0%, #4fc3f7 100%);

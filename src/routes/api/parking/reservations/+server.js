@@ -162,7 +162,7 @@ export async function POST({ request }) {
       startDate,
       endDate,
       shiftType,
-      status: "active",
+      status: "pending",
       createdAt: new Date().toISOString(),
       scheduleDocument: documentData,
     };
