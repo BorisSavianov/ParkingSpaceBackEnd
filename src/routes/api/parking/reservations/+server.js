@@ -12,6 +12,7 @@ import { collection, addDoc, doc, getDoc } from "firebase/firestore";
 
 export async function POST({ request }) {
   try {
+    return json("ok");
     // Authenticate the request
     const authResult = await authenticateRequest(request);
 
