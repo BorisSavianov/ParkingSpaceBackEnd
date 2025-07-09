@@ -73,10 +73,7 @@
     return icons[status] || '❓';
   }
   
-  function calculateUtilizationRate() {
-    if (!stats) return 0;
-    return Math.round((stats.activeReservations / stats.totalSpaces) * 100);
-  }
+ 
   
   function calculateApprovalRate() {
     if (!stats) return 0;
@@ -137,10 +134,7 @@
         <div class="metric-content">
           <h3>Total Reservations</h3>
           <div class="metric-value">{stats.totalReservations}</div>
-          <div class="metric-sub">
-            <span class="period-stat">+{stats.periodStats.newReservations}</span>
-            in selected period
-          </div>
+          
         </div>
       </div>
       
@@ -149,10 +143,7 @@
         <div class="metric-content">
           <h3>Active Reservations</h3>
           <div class="metric-value">{stats.activeReservations}</div>
-          <div class="metric-sub">
-            <span class="utilization-rate">{calculateUtilizationRate()}%</span>
-            space utilization
-          </div>
+         
         </div>
       </div>
       
@@ -161,11 +152,7 @@
         <div class="metric-content">
           <h3>Pending Approval</h3>
           <div class="metric-value">{stats.pendingReservations}</div>
-          <div class="metric-sub">
-            <a href="/admin/reservations?status=pending" class="action-link">
-              Review pending →
-            </a>
-          </div>
+          
         </div>
       </div>
       
@@ -174,10 +161,7 @@
         <div class="metric-content">
           <h3>Total Users</h3>
           <div class="metric-value">{stats.totalUsers}</div>
-          <div class="metric-sub">
-            <span class="approval-rate">{calculateApprovalRate()}%</span>
-            approval rate
-          </div>
+          
         </div>
       </div>
     </div>

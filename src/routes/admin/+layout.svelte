@@ -1,4 +1,3 @@
-<!-- src/routes/admin/+layout.svelte -->
 <script>
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -6,6 +5,7 @@
   import { authenticatedFetch } from '$lib/auth.js';
   import { user } from '$lib/stores/user.js';
   import Header from '$lib/components/Header.svelte';
+  
   
   let loading = true;
   let error = null;
@@ -15,10 +15,16 @@
       // Verify admin access
       const response = await authenticatedFetch('/api/auth/validate');
       const data = await response.json();
-      console.log(data)
+      
       
       if (!data.success || data.user.role !== 'admin') {
+        alert('You must have admin')
         goto('/');
+        return;
+      }
+
+      if (localStorage.getItem('token')  === null){
+        goto('/login');
         return;
       }
       
