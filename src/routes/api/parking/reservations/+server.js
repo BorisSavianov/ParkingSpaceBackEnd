@@ -47,8 +47,7 @@ export async function POST({ request }) {
         const file = formData.get("scheduleDocument");
 
         if (file && file.size > 0) {
-          const fileBuffer = await file.arrayBuffer();
-          uploadedFile = fileBuffer;
+          uploadedFile = file;
         }
       } else {
         // Handle regular JSON request
