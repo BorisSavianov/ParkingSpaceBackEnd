@@ -102,6 +102,12 @@
         morning: true,
         afternoon: true
       };
+
+      const combinedStatus = {
+        fullDay: 'available',
+        morning: 'available',
+        afternoon: 'available'
+      };
       
       const allReservations = [];
       
@@ -114,6 +120,18 @@
           combinedAvailability.fullDay = combinedAvailability.fullDay && spaceForDate.isAvailable?.fullDay;
           combinedAvailability.morning = combinedAvailability.morning && spaceForDate.isAvailable?.morning;
           combinedAvailability.afternoon = combinedAvailability.afternoon && spaceForDate.isAvailable?.afternoon;
+          
+          // Update status based on priority: occupied > pending > available
+          const updateStatus = (current, newStatus) => {
+            if (current === 'occupied') return 'occupied';
+            if (newStatus === 'occupied') return 'occupied';
+            if (current === 'pending' || newStatus === 'pending') return 'pending';
+            return 'available';
+          };
+
+          combinedStatus.fullDay = updateStatus(combinedStatus.fullDay, spaceForDate.status?.fullDay || 'available');
+          combinedStatus.morning = updateStatus(combinedStatus.morning, spaceForDate.status?.morning || 'available');
+          combinedStatus.afternoon = updateStatus(combinedStatus.afternoon, spaceForDate.status?.afternoon || 'available');
           
           // Collect all reservations with date context
           if (spaceForDate.reservations) {
@@ -130,12 +148,16 @@
           combinedAvailability.fullDay = false;
           combinedAvailability.morning = false;
           combinedAvailability.afternoon = false;
+          combinedStatus.fullDay = 'occupied';
+          combinedStatus.morning = 'occupied';
+          combinedStatus.afternoon = 'occupied';
         }
       }
       
       return {
         ...spaceTemplate,
         isAvailable: combinedAvailability,
+        status: combinedStatus,
         reservations: allReservations,
         dateRange: {
           start: selectedStartDate,
@@ -164,6 +186,16 @@
     const isAvailable = getSpaceAvailability(space);
     const apiShift = SHIFT_TYPES[selectedShift].api;
     
+    let statusType = 'available';
+    
+    if (apiShift === '9:30-18:30') {
+      statusType = space.status?.fullDay || 'available';
+    } else if (apiShift === '8:00-14:00') {
+      statusType = space.status?.morning || 'available';
+    } else if (apiShift === '14:00-21:00') {
+      statusType = space.status?.afternoon || 'available';
+    }
+    
     const relevantReservations = space.reservations?.filter(r => {
       if (apiShift === '9:30-18:30') {
         return r.shiftType === 'FULL_DAY';
@@ -177,13 +209,23 @@
 
     return {
       isAvailable,
+      statusType,
       reservedBy: relevantReservations[0]?.user || null,
       reservationCount: relevantReservations.length,
-      conflictingDates: relevantReservations.map(r => r.dateFormatted || r.date).join(', ')
+      conflictingDates: relevantReservations.map(r => r.dateFormatted || r.date).join(', '),
+      pendingReservations: relevantReservations.filter(r => r.status === 'pending')
     };
   }
 
   function selectSpace(spaceNumber) {
+    const space = parkingSpaces.find(s => s.spaceNumber === spaceNumber);
+    const status = getSpaceStatus(space);
+    
+    // Don't allow selection of occupied or pending spaces
+    if (status.statusType === 'occupied' || status.statusType === 'pending') {
+      return;
+    }
+    
     if (selectedSpace === spaceNumber.toString()) {
       selectedSpace = null;
     } else {
@@ -221,11 +263,24 @@
   }
 
   function getAvailableCount() {
-    return parkingSpaces.filter(space => getSpaceAvailability(space)).length;
+    return parkingSpaces.filter(space => {
+      const status = getSpaceStatus(space);
+      return status.statusType === 'available';
+    }).length;
   }
 
   function getOccupiedCount() {
-    return parkingSpaces.filter(space => !getSpaceAvailability(space)).length;
+    return parkingSpaces.filter(space => {
+      const status = getSpaceStatus(space);
+      return status.statusType === 'occupied';
+    }).length;
+  }
+
+  function getPendingCount() {
+    return parkingSpaces.filter(space => {
+      const status = getSpaceStatus(space);
+      return status.statusType === 'pending';
+    }).length;
   }
 
   function getDayCount() {
@@ -324,11 +379,15 @@
           <div class="map-legend">
             <div class="legend-item">
               <div class="legend-color available"></div>
-              <span class="legend-text">Available (all dates)</span>
+              <span class="legend-text">Available</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color pending"></div>
+              <span class="legend-text">Pending</span>
             </div>
             <div class="legend-item">
               <div class="legend-color occupied"></div>
-              <span class="legend-text">Occupied (any date)</span>
+              <span class="legend-text">Occupied</span>
             </div>
             <div class="legend-item">
               <div class="legend-color selected"></div>
@@ -358,18 +417,23 @@
                   {@const status = getSpaceStatus(space)}
                   <button
                     class="parking-space"
-                    class:available={status.isAvailable}
-                    class:occupied={!status.isAvailable}
+                    class:available={status.statusType === 'available'}
+                    class:pending={status.statusType === 'pending'}
+                    class:occupied={status.statusType === 'occupied'}
                     class:selected={selectedSpace === space.spaceNumber.toString()}
                     on:click={() => selectSpace(space.spaceNumber)}
-                    disabled={!status.isAvailable}
-                    title={status.isAvailable 
+                    disabled={status.statusType !== 'available'}
+                    title={status.statusType === 'available' 
                       ? `Space ${space.spaceNumber} - Available for all selected dates` 
+                      : status.statusType === 'pending'
+                      ? `Space ${space.spaceNumber} - Pending reservation on: ${status.conflictingDates || 'some dates'}`
                       : `Space ${space.spaceNumber} - Occupied on: ${status.conflictingDates || 'some dates'}`
                     }
                   >
                     {space.spaceNumber}
-                    {#if !status.isAvailable}
+                    {#if status.statusType === 'pending'}
+                      <div class="pending-overlay"></div>
+                    {:else if status.statusType === 'occupied'}
                       <div class="occupied-overlay"></div>
                     {/if}
                   </button>
@@ -382,18 +446,23 @@
                   {@const status = getSpaceStatus(space)}
                   <button
                     class="parking-space"
-                    class:available={status.isAvailable}
-                    class:occupied={!status.isAvailable}
+                    class:available={status.statusType === 'available'}
+                    class:pending={status.statusType === 'pending'}
+                    class:occupied={status.statusType === 'occupied'}
                     class:selected={selectedSpace === space.spaceNumber.toString()}
                     on:click={() => selectSpace(space.spaceNumber)}
-                    disabled={!status.isAvailable}
-                    title={status.isAvailable 
+                    disabled={status.statusType !== 'available'}
+                    title={status.statusType === 'available' 
                       ? `Space ${space.spaceNumber} - Available for all selected dates` 
+                      : status.statusType === 'pending'
+                      ? `Space ${space.spaceNumber} - Pending reservation on: ${status.conflictingDates || 'some dates'}`
                       : `Space ${space.spaceNumber} - Occupied on: ${status.conflictingDates || 'some dates'}`
                     }
                   >
                     {space.spaceNumber}
-                    {#if !status.isAvailable}
+                    {#if status.statusType === 'pending'}
+                      <div class="pending-overlay"></div>
+                    {:else if status.statusType === 'occupied'}
                       <div class="occupied-overlay"></div>
                     {/if}
                   </button>
@@ -404,6 +473,7 @@
             <!-- Stats -->
             <div class="map-stats">
               <span>Available: <span class="stat-count">{getAvailableCount()}</span></span>
+              <span>Pending: <span class="stat-count">{getPendingCount()}</span></span>
               <span>Occupied: <span class="stat-count">{getOccupiedCount()}</span></span>
               <span>Total: {parkingSpaces.length}</span>
               {#if getDayCount() > 1}
@@ -778,6 +848,11 @@
     border-color: #2563eb;
   }
 
+  .legend-color.pending {
+    background: #f6ab3b;
+    border-color: #f19f22;
+  }
+
   .legend-text {
     font-size: 0.75rem;
     color: #e5e7eb;
@@ -898,6 +973,13 @@
     color: #991b1b;
   }
 
+  .parking-space.pending {
+    background: #f6ab3b;
+    border-color: #f19f22;
+    cursor: not-allowed;
+    color: #bd7100;
+  }
+
   .parking-space.selected {
     background: #3b82f6;
     border-color: #2563eb;
@@ -910,6 +992,13 @@
     position: absolute;
     inset: 0;
     background: rgba(248, 113, 113, 0.5);
+    border-radius: 0.5rem;
+  }
+
+  .pending-overlay {
+    position: absolute;
+    inset: 0;
+    background: #f19f22;
     border-radius: 0.5rem;
   }
 
