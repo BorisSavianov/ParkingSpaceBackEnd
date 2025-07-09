@@ -721,6 +721,142 @@
         </div>
       {/if}
 
+      <!-- Reservation Modal -->
+{#if showReservationModal && selectedReservation}
+  <div class="modal-overlay" on:click={closeReservationModal}>
+    <div class="modal-content" on:click|stopPropagation>
+      <div class="modal-header">
+        <h3 class="modal-title">
+          {#if reservationAction === 'view'}
+            Reservation Details
+          {:else if reservationAction === 'cancel'}
+            Cancel Reservation
+          {:else if reservationAction === 'delete'}
+            Delete Reservation
+          {/if}
+        </h3>
+        <button class="modal-close" on:click={closeReservationModal}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18"/>
+            <path d="M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        {#if actionError}
+          <div class="alert alert-error">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M15 9l-6 6"/>
+              <path d="M9 9l6 6"/>
+            </svg>
+            {actionError}
+          </div>
+        {/if}
+
+        {#if actionSuccess}
+          <div class="alert alert-success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 11l3 3l8-8"/>
+              <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9c1.66 0 3.22.46 4.56 1.25"/>
+            </svg>
+            {actionSuccess}
+          </div>
+        {/if}
+
+        <div class="reservation-details-modal">
+          <div class="detail-row">
+            <span class="detail-label">Space ID:</span>
+            <span class="detail-value">{selectedReservation.spaceId}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Status:</span>
+            <span class="badge {getStatusColor(selectedReservation.status)}">
+              {selectedReservation.status.charAt(0).toUpperCase() + selectedReservation.status.slice(1)}
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Start Date:</span>
+            <span class="detail-value">{formatDate(selectedReservation.startDate)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">End Date:</span>
+            <span class="detail-value">{formatDate(selectedReservation.endDate)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Shift Type:</span>
+            <span class="detail-value">{getShiftTypeLabel(selectedReservation.shiftType)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Created:</span>
+            <span class="detail-value">{formatDateTime(selectedReservation.createdAt)}</span>
+          </div>
+          {#if selectedReservation.updatedAt}
+            <div class="detail-row">
+              <span class="detail-label">Last Updated:</span>
+              <span class="detail-value">{formatDateTime(selectedReservation.updatedAt)}</span>
+            </div>
+          {/if}
+          {#if selectedReservation.scheduleDocument}
+            <div class="detail-row">
+              <span class="detail-label">Schedule Document:</span>
+              <span class="detail-value">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10,9 9,9 8,9"/>
+                </svg>
+                Attached
+              </span>
+            </div>
+          {/if}
+        </div>
+
+        {#if reservationAction === 'cancel'}
+          <div class="confirmation-message">
+            <p>Are you sure you want to cancel this reservation?</p>
+            <p class="warning-text">This action cannot be undone.</p>
+          </div>
+        {:else if reservationAction === 'delete'}
+          <div class="confirmation-message">
+            <p>Are you sure you want to permanently delete this reservation?</p>
+            <p class="warning-text">This action cannot be undone and will remove all record of this reservation.</p>
+          </div>
+        {/if}
+      </div>
+      
+      <div class="modal-footer">
+        {#if reservationAction === 'view'}
+          <button class="btn btn-secondary" on:click={closeReservationModal}>
+            Close
+          </button>
+        {:else}
+          <button class="btn btn-secondary" on:click={closeReservationModal}>
+            Cancel
+          </button>
+          <button 
+            class="btn {reservationAction === 'cancel' ? 'btn-warning' : 'btn-danger'}" 
+            on:click={executeReservationAction}
+            disabled={actionLoading}
+          >
+            {#if actionLoading}
+              <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+              </svg>
+              {reservationAction === 'cancel' ? 'Cancelling...' : 'Deleting...'}
+            {:else}
+              {reservationAction === 'cancel' ? 'Cancel Reservation' : 'Delete Reservation'}
+            {/if}
+          </button>
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}
+
 
       {#if !editing}
       <div class="controls-grid">
@@ -1268,6 +1404,382 @@
     .card-header,
     .card-content {
       padding: 1rem;
+    }
+  }
+
+  /* Reservation Cards */
+  .reservations-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .reservations-grid {
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    }
+  }
+
+  .reservation-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    transition: all 0.2s;
+  }
+
+  .reservation-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .reservation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    gap: 1rem;
+  }
+
+  .reservation-info {
+    flex: 1;
+  }
+
+  .reservation-title {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #1f2937;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .reservation-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .reservation-date {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+
+  .reservation-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .reservation-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+
+  .detail-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* Status badges */
+  .status-active {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+
+  .status-pending {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  .status-cancelled {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .status-rejected {
+    background: #fdf2f8;
+    color: #be185d;
+  }
+
+  .status-unknown {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+  }
+
+  .empty-state svg {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .empty-state h3 {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    margin-bottom: 1.5rem;
+    max-width: 20rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .modal-title {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #1f2937;
+    margin: 0;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover {
+    color: #374151;
+    background: #f3f4f6;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1rem 1.5rem 1.5rem;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  .reservation-details-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+
+  .detail-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .detail-value {
+    font-size: 0.875rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .confirmation-message {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+
+  .confirmation-message p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #92400e;
+  }
+
+  .warning-text {
+    font-weight: 500;
+    margin-top: 0.5rem !important;
+  }
+
+  /* Additional button styles */
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .btn-warning {
+    background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+  }
+
+  .btn-warning:hover:not(:disabled) {
+    background: linear-gradient(90deg, #d97706 0%, #b45309 100%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .card-header-content > div:first-child {
+    flex: 1;
+  }
+
+  /* Dark mode for modal */
+  .page-container.dark .modal-content {
+    background: #334155;
+  }
+
+  .page-container.dark .modal-title {
+    color: #e2e8f0;
+  }
+
+  .page-container.dark .modal-close {
+    color: #94a3b8;
+  }
+
+  .page-container.dark .modal-close:hover {
+    color: #e2e8f0;
+    background: #475569;
+  }
+
+  .page-container.dark .modal-header {
+    border-bottom-color: #475569;
+  }
+
+  .page-container.dark .modal-footer {
+    border-top-color: #475569;
+  }
+
+  .page-container.dark .detail-row {
+    border-bottom-color: #475569;
+  }
+
+  .page-container.dark .detail-label {
+    color: #e2e8f0;
+  }
+
+  .page-container.dark .detail-value {
+    color: #94a3b8;
+  }
+
+  .page-container.dark .reservation-card {
+    background: #475569;
+    border-color: #64748b;
+  }
+
+  .page-container.dark .reservation-card:hover {
+    border-color: #94a3b8;
+  }
+
+  .page-container.dark .reservation-title {
+    color: #e2e8f0;
+  }
+
+  .page-container.dark .reservation-date {
+    color: #94a3b8;
+  }
+
+  .page-container.dark .detail-item {
+    color: #94a3b8;
+  }
+
+  .page-container.dark .empty-state {
+    color: #94a3b8;
+  }
+
+  .page-container.dark .empty-state h3 {
+    color: #e2e8f0;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .reservation-actions {
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .reservation-actions .btn {
+      width: 100%;
+    }
+
+    .modal-content {
+      margin: 0.5rem;
+    }
+
+    .modal-footer {
+      flex-direction: column;
+    }
+
+    .modal-footer .btn {
+      width: 100%;
+    }
+
+    .controls-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>
