@@ -1,4 +1,4 @@
-// src/routes/api/parking/reservations/+server.js - Updated with PDF support
+// src/routes/api/parking/reservations/+server.js - Fixed version
 import { json } from "@sveltejs/kit";
 import { authenticateRequest } from "$lib/auth-middleware.js";
 import {
@@ -24,28 +24,39 @@ export async function POST({ request }) {
 
     const { uid: userId } = authResult.user;
 
-    // Check if request contains file upload
-    const contentType = request.headers.get("content-type");
+    // Check content type and parse accordingly
+    const contentType = request.headers.get("content-type") || "";
     let requestData;
     let uploadedFile = null;
 
-    if (contentType && contentType.includes("multipart/form-data")) {
-      // Handle form data with file upload
-      const formData = await request.formData();
-      requestData = {
-        spaceId: formData.get("spaceId"),
-        startDate: formData.get("startDate"),
-        endDate: formData.get("endDate"),
-        shiftType: formData.get("shiftType"),
-      };
+    try {
+      if (contentType.includes("multipart/form-data")) {
+        // Handle form data with file upload
+        const formData = await request.formData();
+        requestData = {
+          spaceId: formData.get("spaceId"),
+          startDate: formData.get("startDate"),
+          endDate: formData.get("endDate"),
+          shiftType: formData.get("shiftType"),
+        };
 
-      const file = formData.get("scheduleDocument");
-      if (file && file.size > 0) {
-        uploadedFile = file;
+        const file = formData.get("scheduleDocument");
+        if (file && file.size > 0) {
+          uploadedFile = file;
+        }
+      } else {
+        // Handle regular JSON request
+        requestData = await request.json();
       }
-    } else {
-      // Handle regular JSON request
-      requestData = await request.json();
+    } catch (parseError) {
+      console.error("Request parsing error:", parseError);
+      return json(
+        {
+          success: false,
+          error: "Invalid request format. Expected JSON or FormData.",
+        },
+        { status: 400 }
+      );
     }
 
     const { spaceId, startDate, endDate, shiftType } = requestData;
@@ -105,18 +116,6 @@ export async function POST({ request }) {
         { status: 400 }
       );
     }
-
-    // Verify space exists
-    // const spaceDoc = await getDoc(doc(db, "parkingSpaces", spaceDocId));
-    // if (!spaceDoc.exists()) {
-    //   return json(
-    //     {
-    //       success: false,
-    //       error: "Parking space not found",
-    //     },
-    //     { status: 404 }
-    //   );
-    // }
 
     // Check space availability
     const isAvailable = await checkSpaceAvailability(
