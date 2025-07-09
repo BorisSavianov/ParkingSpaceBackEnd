@@ -14,6 +14,9 @@
   let success = '';
   let authUnsubscribe = null;
   let isAuthChecked = false;
+  let reservations = [];
+let reservationsError = '';
+
 
   // Form data for editing
   let editForm = {
@@ -26,8 +29,10 @@
   const allowedDepartments = ['frontend', 'backend', 'mobile', 'qa'];
 
   onMount(async () => {
-    loadProfile();
-  });
+  await loadProfile();
+});
+
+
 
   async function loadProfile() {
     try {
@@ -39,6 +44,8 @@
         
       if (result.success) {
         user = result.user;
+
+        reservations = result.reservations;
         // Initialize edit form with current data
         editForm = {
           firstName: user.firstName || '',
@@ -432,7 +439,34 @@
             </button>
           </div>
         </div></div>
+
       {/if}
+
+      {#if !editing && reservations}
+  <div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Your Reservations</h2>
+  </div>
+  <div class="card-content">
+    {#if reservationsError}
+      <div class="alert alert-error">{reservationsError}</div>
+    {:else if reservations.length === 0}
+      <p>You have no reservations.</p>
+    {:else}
+      <ul class="reservation-list">
+        {#each reservations as r}
+          <li>
+            <strong>{r.spaceLabel || 'Space'}:</strong>
+            {new Date(r.startDate).toLocaleDateString()} - {new Date(r.endDate).toLocaleDateString()}
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
+</div>
+
+{/if}
+
     {/if}
   </div>
 </div>

@@ -2,32 +2,45 @@
 import { json } from "@sveltejs/kit";
 import { authenticateRequest } from "$lib/auth-middleware.js";
 import { db } from "$lib/firebase.js";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { auth } from "$lib/firebase.js";
 
 export async function GET({ request }) {
-  try {
-    // Authenticate the request
-    const authResult = await authenticateRequest(request);
+  const authResult = await authenticateRequest(request);
 
-    if (!authResult.success) {
-      return json(
-        { success: false, error: authResult.error },
-        { status: authResult.status }
-      );
-    }
-
-    return json({
-      success: true,
-      user: authResult.user,
-    });
-  } catch (error) {
-    console.error("Profile fetch error:", error);
+  if (!authResult.success) {
     return json(
-      {
-        success: false,
-        error: "Failed to fetch user profile",
-      },
+      { success: false, error: authResult.error },
+      { status: authResult.status }
+    );
+  }
+
+  try {
+    // Fetch user profile from DB if needed
+    const user = authResult.user;
+
+    // Fetch reservations
+    const reservationsRef = collection(db, "reservations");
+    const q = query(reservationsRef, where("userId", "==", user.uid));
+    const snapshot = await getDocs(q);
+
+    const reservations = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return json({ success: true, user, reservations });
+  } catch (err) {
+    return json(
+      { success: false, error: "Failed to fetch profile or reservations" },
       { status: 500 }
     );
   }
