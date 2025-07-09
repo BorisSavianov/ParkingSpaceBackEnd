@@ -35,6 +35,7 @@ export async function POST({ request }) {
       if (contentType.includes("multipart/form-data")) {
         // Handle form data with file upload
         const formData = await request.formData();
+        console.error(1);
         console.error(formData);
         requestData = {
           spaceId: formData.get("spaceId"),
@@ -42,13 +43,12 @@ export async function POST({ request }) {
           endDate: formData.get("endDate"),
           shiftType: formData.get("shiftType"),
         };
-        console.error(1);
+
         const file = formData.get("scheduleDocument");
-        console.error(2);
+
         if (file && file.size > 0) {
           const fileBuffer = await file.arrayBuffer();
           uploadedFile = fileBuffer;
-          console.error(3);
         }
       } else {
         // Handle regular JSON request
