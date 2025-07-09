@@ -13,6 +13,7 @@ import { collection, addDoc, doc, getDoc } from "firebase/firestore";
 export async function POST({ request }) {
   try {
     // Authenticate the request
+    console.error(5);
     const authResult = await authenticateRequest(request);
 
     if (!authResult.success) {
@@ -28,6 +29,7 @@ export async function POST({ request }) {
     const contentType = request.headers.get("content-type") || "";
     let requestData;
     let uploadedFile = null;
+    console.error(6);
 
     try {
       if (contentType.includes("multipart/form-data")) {
