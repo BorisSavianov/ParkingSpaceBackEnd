@@ -12,7 +12,6 @@ import { collection, addDoc, doc, getDoc } from "firebase/firestore";
 
 export async function POST({ request }) {
   try {
-    return json("ok");
     // Authenticate the request
     const authResult = await authenticateRequest(request);
 
@@ -260,4 +259,16 @@ export async function GET({ request }) {
       { status: 500 }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "https://reserve-parking-space.vercel.app",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true",
+    },
+  });
 }
