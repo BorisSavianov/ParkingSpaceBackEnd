@@ -165,7 +165,7 @@ export async function getSpaceReservations(spaceId, date) {
   const q = query(
     reservationsRef,
     where("spaceId", "==", spaceId),
-    where("status", "==", "active")
+    where("status", "in", ["active", "pending"])
   );
 
   const snapshot = await getDocs(q);

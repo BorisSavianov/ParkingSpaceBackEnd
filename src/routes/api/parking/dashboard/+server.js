@@ -1,5 +1,5 @@
 import { json } from "@sveltejs/kit";
-import { checkSpaceAvailability, getSpaceReservations } from "$lib/parking.js";
+import { checkSpaceAvailability } from "$lib/parking.js";
 
 export async function GET({ url }) {
   try {
@@ -13,9 +13,6 @@ export async function GET({ url }) {
     // Generate space data for each parking space
     for (let i = 1; i <= TOTAL_SPACES; i++) {
       const spaceId = `space-${i}`;
-
-      // Get reservations for this space on this date
-      const reservations = await getSpaceReservations(spaceId, date);
 
       // Check availability for each shift type
       const isMorningAvailable = await checkSpaceAvailability(
@@ -39,30 +36,6 @@ export async function GET({ url }) {
         "9:30-18:30"
       );
 
-      // Check for pending reservations in each shift
-      const morningPending = reservations.some(
-        (r) =>
-          r.status === "pending" &&
-          (r.shiftType === "MORNING" || r.shiftType === "FULL_DAY")
-      );
-
-      const afternoonPending = reservations.some(
-        (r) =>
-          r.status === "pending" &&
-          (r.shiftType === "AFTERNOON" || r.shiftType === "FULL_DAY")
-      );
-
-      const fullDayPending = reservations.some(
-        (r) => r.status === "pending" && r.shiftType === "FULL_DAY"
-      );
-
-      // Determine status for each shift: 'available', 'occupied', or 'pending'
-      const getShiftStatus = (isAvailable, isPending) => {
-        if (isPending) return "pending";
-        if (!isAvailable) return "occupied";
-        return "available";
-      };
-
       spaces.push({
         id: spaceId,
         spaceNumber: i,
@@ -71,15 +44,6 @@ export async function GET({ url }) {
           afternoon: isAfternoonAvailable,
           fullDay: isFullDayAvailable,
         },
-        status: {
-          morning: getShiftStatus(isMorningAvailable, morningPending),
-          afternoon: getShiftStatus(isAfternoonAvailable, afternoonPending),
-          fullDay: getShiftStatus(isFullDayAvailable, fullDayPending),
-        },
-        reservations: reservations.map((r) => ({
-          ...r,
-          shiftType: r.shiftType || "UNKNOWN",
-        })),
         // Add any other space properties you need
         type: "standard", // or "disabled", "electric", etc.
         location: `Row ${Math.ceil(i / 10)}, Space ${i}`,
