@@ -41,8 +41,6 @@
     { href: '/admin', label: 'Dashboard', icon: '📊' },
     { href: '/admin/reservations', label: 'Reservations', icon: '🚗' },
     { href: '/admin/users', label: 'Users', icon: '👥' },
-    { href: '/admin/spaces', label: 'Spaces', icon: '🏢' },
-    { href: '/admin/analytics', label: 'Analytics', icon: '📈' }
   ];
   
   $: currentPath = $page.url.pathname;

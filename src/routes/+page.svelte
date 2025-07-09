@@ -15,7 +15,7 @@
 
   const SHIFT_TYPES = {
     'morning': { name: 'Morning', time: '8:00 AM - 2:00 PM', api: '8:00-14:00' },
-    'afternoon': { name: 'Afternoon', time: '2:00 PM - 10:00 PM', api: '14:00-21:00' },
+    'afternoon': { name: 'Afternoon', time: '2:00 PM - 9:00 PM', api: '14:00-21:00' },
     'full': { name: 'Full Day', time: '9:30 AM - 6:30 PM', api: '9:30-18:30' }
   };
 
