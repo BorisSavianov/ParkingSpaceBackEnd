@@ -94,8 +94,8 @@
       <button on:click={toggleTheme} class="nav-button icon-button" aria-label="Toggle theme">
         <img src="/dark-mode.png" alt="Theme" class="button-icon bri" />
       </button>
-      <a on:click={goto('/admin')} class="nav-button icon-button" aria-label="User profile">
-        <img src="/user.png" alt="Profile" class="button-icon" />
+      <a on:click={goto('/admin')} tyle="fill: white;" class="nav-button icon-button" aria-label="User profile">
+        <img src="/admin.svg" alt="Profile" class="button-icon" />
       </a>
       <a on:click={goto('/profile')} class="nav-button icon-button" aria-label="User profile">
         <img src="/user.png" alt="Profile" class="button-icon" />
@@ -116,6 +116,9 @@
     }} class="mobile-nav-button icon-button" aria-label="Toggle theme">
       <img src="/dark-mode.png" alt="Theme" class="button-icon bri" />
     </button>
+    <a on:click={goto('/admin')} class="mobile-nav-button icon-button" aria-label="User profile">
+      <img src="/admin.svg" alt="Profile" class="button-icon " />
+    </a>
     <a on:click={goto('/profile')} class="mobile-nav-button icon-button" aria-label="User profile">
       <img src="/user.png" alt="Profile" class="button-icon " />
     </a>

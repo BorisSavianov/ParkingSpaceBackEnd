@@ -1,4 +1,5 @@
 // src/lib/auth.js - Enhanced version
+import { goto } from "$app/navigation";
 import { auth, db } from "./firebase.js";
 import {
   createUserWithEmailAndPassword,

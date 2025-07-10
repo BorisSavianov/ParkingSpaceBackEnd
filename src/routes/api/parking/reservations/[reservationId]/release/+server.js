@@ -1,6 +1,7 @@
 import { json } from "@sveltejs/kit";
 import { db } from "$lib/firebase.js";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { verifyAuthToken } from "$lib/auth-middleware.js";
 
 export async function POST({ params, request }) {
   try {
@@ -9,7 +10,9 @@ export async function POST({ params, request }) {
       return json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = authHeader.split(" ")[1];
+    const token = authHeader.split(" ")[1];
+    const userId = (await verifyAuthToken(token)).user.uid;
+
     const { reservationId } = params;
 
     // Get existing reservation
@@ -35,7 +38,7 @@ export async function POST({ params, request }) {
     await updateDoc(doc(db, "reservations", reservationId), {
       endDate: today,
       releasedAt: new Date().toISOString(),
-      status: "released",
+      status: "cancelled",
     });
 
     return json({

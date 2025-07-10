@@ -42,7 +42,7 @@
       
       if (selectedStatus !== 'all') params.set('status', selectedStatus);
       if (searchUserId) params.set('userId', searchUserId);
-      if (searchSpaceId) params.set('spaceId', searchSpaceId);
+      if (searchSpaceId) params.set('spaceId', 'space-'+searchSpaceId);
       if (append && lastDocId) params.set('lastDocId', lastDocId);
       
       const response = await authenticatedFetch(`/api/admin/reservations?${params}`);
@@ -334,13 +334,14 @@
                   <div class="user-name">
                     {reservation.user ? `${reservation.user.firstName} ${reservation.user.lastName}` : 'Unknown User'}
                   </div>
-                  <div class="user-email">{reservation.user?.email || reservation.userId}</div>
+                  <div class="user-email">{reservation.user?.email }</div>
+                  <div class="user-email">{reservation.userId}</div>
                 </div>
               </td>
               <td>
                 <div class="space-cell">
                   <div class="space-name">Space {reservation.spaceId}</div>
-                  <div class="space-location">{reservation.space?.location || 'Unknown Location'}</div>
+                  
                 </div>
               </td>
               <td>
@@ -680,11 +681,6 @@
   .space-name {
     font-weight: 500;
     color: #1f2937;
-  }
-  
-  .space-location {
-    font-size: 0.75rem;
-    color: #6b7280;
   }
   
   .period-cell {

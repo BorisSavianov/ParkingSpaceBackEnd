@@ -2,7 +2,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
-  import { authenticatedFetch, logoutUser, onAuthStateChange } from '$lib/auth.js';
+  import { authenticatedFetch, onAuthStateChange } from '$lib/auth.js';
   import Header from '$lib/components/Header.svelte';
   import { theme } from '$lib/stores/theme';
 
@@ -68,6 +68,11 @@
       isAuthChecked = true;
       loading = false;
     }
+  }
+
+  async function logout() {
+    localStorage.removeItem('token');
+    window.location.href = "/login"
   }
 
   async function loadReservations() {
@@ -225,19 +230,11 @@
 
       switch (reservationAction) {
         case 'cancel':
-          endpoint = '/api/reservations';
-          method = 'PUT';
-          body = JSON.stringify({
-            reservationId: selectedReservation.id,
-            action: 'cancel'
-          });
-          break;
-        case 'delete':
-          endpoint = '/api/reservations';
-          method = 'DELETE';
-          body = JSON.stringify({
-            reservationId: selectedReservation.id
-          });
+
+          // Use the release API endpoint
+          endpoint = `/api/parking/reservations/${selectedReservation.id}/release`;
+          method = 'POST';
+          body = null; // No body needed for release API
           break;
         default:
           actionError = 'Invalid action';
@@ -246,19 +243,25 @@
 
       const response = await authenticatedFetch(endpoint, {
         method,
-        body
+        ...(body && { body })
       });
 
       const result = await response.json();
 
       if (result.success) {
-        actionSuccess = `Reservation ${reservationAction}ed successfully!`;
+        const actionText = reservationAction === 'cancel' || reservationAction === 'release' 
+          ? 'released' 
+          : reservationAction + 'ed';
+        actionSuccess = `Reservation ${actionText} successfully!`;
         await loadReservations();
         setTimeout(() => {
           closeReservationModal();
         }, 1500);
       } else {
-        actionError = result.error || `Failed to ${reservationAction} reservation`;
+        const actionText = reservationAction === 'cancel' || reservationAction === 'release' 
+          ? 'release' 
+          : reservationAction;
+        actionError = result.error || `Failed to ${actionText} reservation`;
       }
     } catch (err) {
       actionError = 'Network error: ' + err.message;
@@ -274,6 +277,7 @@
       case 'pending':
         return 'status-pending';
       case 'cancelled':
+      case 'canceled': // Handle both spellings
         return 'status-cancelled';
       case 'rejected':
         return 'status-rejected';
@@ -317,14 +321,10 @@
     return reservation.status === 'active' || reservation.status === 'pending';
   }
 
-  function canDeleteReservation(reservation) {
-    return reservation.status === 'cancelled' || reservation.status === 'rejected';
-  }
-
   function sortReservations(reservations) {
     return reservations.sort((a, b) => {
       // Sort by status priority first (active, pending, cancelled, rejected)
-      const statusOrder = { 'active': 1, 'pending': 2, 'cancelled': 3, 'rejected': 4 };
+      const statusOrder = { 'active': 1, 'pending': 2, 'cancelled': 3, 'canceled': 3, 'rejected': 4 };
       const statusDiff = (statusOrder[a.status] || 5) - (statusOrder[b.status] || 5);
       if (statusDiff !== 0) return statusDiff;
       
@@ -668,19 +668,7 @@
                             Cancel
                           </button>
                         {/if}
-                        {#if canDeleteReservation(reservation)}
-                          <button 
-                            class="btn btn-sm btn-danger" 
-                            on:click={() => openReservationModal(reservation, 'delete')}
-                          >
-                            <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                              <path d="M3 6h18"/>
-                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                            </svg>
-                            Delete
-                          </button>
-                        {/if}
+                        
                       </div>
                     </div>
                     <div class="reservation-details">
@@ -731,8 +719,7 @@
             Reservation Details
           {:else if reservationAction === 'cancel'}
             Cancel Reservation
-          {:else if reservationAction === 'delete'}
-            Delete Reservation
+
           {/if}
         </h3>
         <button class="modal-close" on:click={closeReservationModal}>
@@ -820,11 +807,7 @@
             <p>Are you sure you want to cancel this reservation?</p>
             <p class="warning-text">This action cannot be undone.</p>
           </div>
-        {:else if reservationAction === 'delete'}
-          <div class="confirmation-message">
-            <p>Are you sure you want to permanently delete this reservation?</p>
-            <p class="warning-text">This action cannot be undone and will remove all record of this reservation.</p>
-          </div>
+
         {/if}
       </div>
       
@@ -868,7 +851,7 @@
             </h2>
           </div>
           <div class="card-content" style="padding-bottom: 0;">
-            <button class="btn btn-logout" on:click={logoutUser}>
+            <button class="btn btn-logout" on:click={logout}>
               Logout
             </button>
           </div>

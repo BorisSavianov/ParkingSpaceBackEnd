@@ -17,7 +17,7 @@
 
       // Store token
       localStorage.setItem('token', token);
-      console.log(token)
+      
 
       // Validate with server
       const res = await fetch('/api/auth/validate', {
