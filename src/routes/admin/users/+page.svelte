@@ -1316,7 +1316,7 @@
       grid-template-columns: 1fr;
       gap: 1rem;
     }
-    
+      
     .form-grid {
       grid-template-columns: 1fr;
     }

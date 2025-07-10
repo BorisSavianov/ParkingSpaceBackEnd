@@ -141,14 +141,14 @@
         <div class="mode-toggle">
           <button 
             class="toggle-button {isLoginMode ? 'active' : ''}" 
-            on:click={() => isLoginMode && toggleMode()}
+            on:click={() => !isLoginMode && toggleMode()}
             class:active={isLoginMode}
           >
             Login
           </button>
           <button 
             class="toggle-button {!isLoginMode ? 'active' : ''}" 
-            on:click={() => !isLoginMode && toggleMode()}
+            on:click={() => isLoginMode && toggleMode()}
             class:active={!isLoginMode}
           >
             Sign Up
