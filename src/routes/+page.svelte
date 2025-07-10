@@ -299,9 +299,7 @@
                 />
               </div>
             </div>
-            <div class="date-range-info">
-              <span class="range-days">{getDayCount()} day{getDayCount() > 1 ? 's' : ''} selected</span>
-            </div>
+
           </div>
         </div>
       </div>
