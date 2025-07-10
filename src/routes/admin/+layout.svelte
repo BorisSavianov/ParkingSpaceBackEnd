@@ -38,9 +38,9 @@
   });
   
   const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: '📊' },
-    { href: '/admin/reservations', label: 'Reservations', icon: '🚗' },
-    { href: '/admin/users', label: 'Users', icon: '👥' },
+    { href: '/admin', label: 'Dashboard'},
+    { href: '/admin/reservations', label: 'Reservations'},
+    { href: '/admin/users', label: 'Users'},
   ];
   
   $: currentPath = $page.url.pathname;
@@ -66,7 +66,7 @@
     <!-- Sidebar -->
     <nav class="admin-sidebar">
       <div class="sidebar-header">
-        <h2>🛡️ Admin Panel</h2>
+        <h2>Admin Panel</h2>
       </div>
       
       <ul class="nav-menu">
@@ -76,7 +76,6 @@
             on:click={() => goto(item.href)}
               class="nav-link {currentPath === item.href ? 'active' : ''}"
             >
-              <span class="nav-icon">{item.icon}</span>
               <span class="nav-label">{item.label}</span>
             </a>
           </li>
@@ -133,8 +132,7 @@
     display: flex;
     flex-direction: column;
     position: fixed;
-    height: calc(100vh - 80px);
-    top: 80px;
+    height:100vh;
     left: 0;
     overflow-y: auto;
     z-index: 50;
@@ -178,11 +176,6 @@
     background: #eff6ff;
     color: #2563eb;
     border-left-color: #2563eb;
-  }
-  
-  .nav-icon {
-    margin-right: 0.75rem;
-    font-size: 1.125rem;
   }
   
   .nav-label {
@@ -244,11 +237,6 @@
     .nav-link.active {
       background: #2563eb;
       color: white;
-    }
-    
-    .nav-icon {
-      margin-right: 0;
-      margin-bottom: 0.25rem;
     }
   }
 </style>

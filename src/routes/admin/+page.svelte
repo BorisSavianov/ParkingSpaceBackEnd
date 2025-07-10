@@ -63,18 +63,6 @@
     return colors[status] || '#6b7280';
   }
   
-  function getStatusIcon(status) {
-    const icons = {
-      active: '✅',
-      pending: '⏳',
-      cancelled: '❌',
-      rejected: '🚫'
-    };
-    return icons[status] || '❓';
-  }
-  
- 
-  
   function calculateApprovalRate() {
     if (!stats) return 0;
     const total = stats.totalReservations;
@@ -95,7 +83,7 @@
 <div class="dashboard">
   <div class="dashboard-header">
     <div class="header-content">
-      <h1>📊 Admin Dashboard</h1>
+      <h1>Admin Dashboard</h1>
       <div class="header-controls">
         <div class="date-range-selector">
           <label for="dateRange">Time Period:</label>
@@ -122,7 +110,7 @@
     </div>
   {:else if error}
     <div class="error-state">
-      <h3>❌ Error</h3>
+      <h3>Error</h3>
       <p>{error}</p>
       <button class="retry-btn" on:click={loadStats}>Try Again</button>
     </div>
@@ -130,7 +118,6 @@
     <!-- Key Metrics -->
     <div class="metrics-grid">
       <div class="metric-card primary">
-        <div class="metric-icon">🚗</div>
         <div class="metric-content">
           <h3>Total Reservations</h3>
           <div class="metric-value">{stats.totalReservations}</div>
@@ -139,7 +126,6 @@
       </div>
       
       <div class="metric-card success">
-        <div class="metric-icon">✅</div>
         <div class="metric-content">
           <h3>Active Reservations</h3>
           <div class="metric-value">{stats.activeReservations}</div>
@@ -148,7 +134,6 @@
       </div>
       
       <div class="metric-card warning">
-        <div class="metric-icon">⏳</div>
         <div class="metric-content">
           <h3>Pending Approval</h3>
           <div class="metric-value">{stats.pendingReservations}</div>
@@ -157,7 +142,6 @@
       </div>
       
       <div class="metric-card info">
-        <div class="metric-icon">👥</div>
         <div class="metric-content">
           <h3>Total Users</h3>
           <div class="metric-value">{stats.totalUsers}</div>
@@ -168,11 +152,10 @@
 
     <!-- Status Breakdown -->
     <div class="section">
-      <h2>📈 Reservation Status Breakdown</h2>
+      <h2>Reservation Status Breakdown</h2>
       <div class="status-grid">
         <div class="status-card">
           <div class="status-header">
-            <span class="status-icon">✅</span>
             <h4>Active</h4>
           </div>
           <div class="status-count">{stats.activeReservations}</div>
@@ -183,7 +166,6 @@
         
         <div class="status-card">
           <div class="status-header">
-            <span class="status-icon">⏳</span>
             <h4>Pending</h4>
           </div>
           <div class="status-count">{stats.pendingReservations}</div>
@@ -194,7 +176,6 @@
         
         <div class="status-card">
           <div class="status-header">
-            <span class="status-icon">❌</span>
             <h4>Cancelled</h4>
           </div>
           <div class="status-count">{stats.cancelledReservations}</div>
@@ -205,7 +186,6 @@
         
         <div class="status-card">
           <div class="status-header">
-            <span class="status-icon">🚫</span>
             <h4>Rejected</h4>
           </div>
           <div class="status-count">{stats.rejectedReservations}</div>
@@ -218,10 +198,9 @@
 
     <!-- Shift Type Distribution -->
     <div class="section">
-      <h2>🕐 Shift Type Distribution</h2>
+      <h2>Shift Type Distribution</h2>
       <div class="shift-grid">
         <div class="shift-card">
-          <div class="shift-icon">🌅</div>
           <div class="shift-content">
             <h4>Morning Shift</h4>
             <div class="shift-time">8:00 - 14:00</div>
@@ -230,7 +209,6 @@
         </div>
         
         <div class="shift-card">
-          <div class="shift-icon">🌇</div>
           <div class="shift-content">
             <h4>Afternoon Shift</h4>
             <div class="shift-time">14:00 - 21:00</div>
@@ -239,7 +217,6 @@
         </div>
         
         <div class="shift-card">
-          <div class="shift-icon">🌞</div>
           <div class="shift-content">
             <h4>Full Day</h4>
             <div class="shift-time">9:30 - 18:30</div>
@@ -253,7 +230,7 @@
     <div class="two-column">
       <!-- Space Utilization -->
       <div class="section">
-        <h2>🏢 Top Utilized Spaces</h2>
+        <h2>Top Utilized Spaces</h2>
         <div class="space-list">
           {#each stats.spaceUtilization as space, index}
             <div class="space-item">
@@ -274,7 +251,7 @@
       
       <!-- User Activity -->
       <div class="section">
-        <h2>👥 Most Active Users</h2>
+        <h2>Most Active Users</h2>
         <div class="user-list">
           {#each stats.userActivity as user, index}
             <div class="user-item">
@@ -296,12 +273,11 @@
 
     <!-- Recent Activity -->
     <div class="section">
-      <h2>⚡ Recent Activity</h2>
+      <h2>Recent Activity</h2>
       <div class="activity-list">
         {#each stats.recentActivity as activity}
           <div class="activity-item">
             <div class="activity-status">
-              <span class="activity-icon">{getStatusIcon(activity.status)}</span>
               <span class="activity-status-text" style="color: {getStatusColor(activity.status)};">
                 {activity.status.toUpperCase()}
               </span>
@@ -327,10 +303,9 @@
 
     <!-- Quick Actions -->
     <div class="section">
-      <h2>🚀 Quick Actions</h2>
+      <h2>Quick Actions</h2>
       <div class="actions-grid">
         <a href="/admin/reservations?status=pending" class="action-card urgent">
-          <div class="action-icon">⏳</div>
           <div class="action-content">
             <h4>Review Pending</h4>
             <p>{stats.pendingReservations} reservations need approval</p>
@@ -338,7 +313,6 @@
         </a>
         
         <a href="/admin/reservations" class="action-card">
-          <div class="action-icon">🚗</div>
           <div class="action-content">
             <h4>Manage Reservations</h4>
             <p>View and manage all reservations</p>
@@ -346,18 +320,9 @@
         </a>
         
         <a href="/admin/users" class="action-card">
-          <div class="action-icon">👥</div>
           <div class="action-content">
             <h4>User Management</h4>
             <p>Manage user accounts and permissions</p>
-          </div>
-        </a>
-        
-        <a href="/admin/spaces" class="action-card">
-          <div class="action-icon">🏢</div>
-          <div class="action-content">
-            <h4>Parking Spaces</h4>
-            <p>Configure and manage parking spaces</p>
           </div>
         </a>
       </div>

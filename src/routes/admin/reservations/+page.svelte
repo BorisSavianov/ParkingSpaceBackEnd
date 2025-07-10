@@ -222,16 +222,7 @@
     };
     return colors[status] || '#6b7280';
   }
-  
-  function getStatusIcon(status) {
-    const icons = {
-      active: '✅',
-      pending: '⏳',
-      cancelled: '❌',
-      rejected: '🚫'
-    };
-    return icons[status] || '❓';
-  }
+
 </script>
 
 <svelte:head>
@@ -240,7 +231,7 @@
 
 <div class="reservations-page">
   <div class="page-header">
-    <h1>🚗 Reservations Management</h1>
+    <h1>Reservations Management</h1>
     <div class="header-stats">
       <span class="stat-item">Total: {reservations.length}</span>
       <span class="stat-item">Active: {reservations.filter(r => r.status === 'active').length}</span>
@@ -285,7 +276,6 @@
       </div>
       
       <button class="refresh-btn" on:click={() => loadReservations()}>
-        <span class="refresh-icon">🔄</span>
         Refresh
       </button>
     </div>
@@ -298,7 +288,7 @@
     </div>
   {:else if error}
     <div class="error-state">
-      <h3>❌ Error</h3>
+      <h3>Error</h3>
       <p>{error}</p>
       <button class="retry-btn" on:click={() => loadReservations()}>Try Again</button>
     </div>
@@ -323,7 +313,6 @@
             <tr class="reservation-row">
               <td>
                 <div class="status-cell">
-                  <span class="status-icon">{getStatusIcon(reservation.status)}</span>
                   <span class="status-text" style="color: {getStatusColor(reservation.status)};">
                     {reservation.status.toUpperCase()}
                   </span>
@@ -368,7 +357,7 @@
                       class="doc-btn" 
                       on:click={() => downloadDocument(reservation.id)}
                     >
-                      📄 View
+                      View
                     </button>
                   {:else}
                     <span class="no-doc">No document</span>
@@ -383,14 +372,14 @@
                       on:click={() => openModal('approve', reservation)}
                       disabled={processingActions.has(reservation.id)}
                     >
-                      ✅ Approve
+                      Approve
                     </button>
                     <button 
                       class="action-btn reject" 
                       on:click={() => openModal('reject', reservation)}
                       disabled={processingActions.has(reservation.id)}
                     >
-                      🚫 Reject
+                      Reject
                     </button>
                   {:else if reservation.status === 'active'}
                     <button 
@@ -398,7 +387,7 @@
                       on:click={() => openModal('cancel', reservation)}
                       disabled={processingActions.has(reservation.id)}
                     >
-                      ❌ Cancel
+                      Cancel
                     </button>
                   {/if}
                   
@@ -407,7 +396,7 @@
                     on:click={() => openModal('update', reservation)}
                     disabled={processingActions.has(reservation.id)}
                   >
-                    ✏️ Edit
+                    Edit
                   </button>
                   
                   <button 
@@ -415,7 +404,7 @@
                     on:click={() => deleteReservation(reservation.id)}
                     disabled={processingActions.has(reservation.id)}
                   >
-                    🗑️ Delete
+                    Delete
                   </button>
                 </div>
               </td>
@@ -454,13 +443,13 @@
       <div class="modal-header">
         <h3>
           {#if modalType === 'reject'}
-            🚫 Reject Reservation
+            Reject Reservation
           {:else if modalType === 'cancel'}
-            ❌ Cancel Reservation
+            Cancel Reservation
           {:else if modalType === 'update'}
-            ✏️ Update Reservation
+            Update Reservation
           {:else if modalType === 'approve'}
-            ✅ Approve
+            Approve
           {/if}
         </h3>
         <button class="close-btn" on:click={closeModal}>×</button>

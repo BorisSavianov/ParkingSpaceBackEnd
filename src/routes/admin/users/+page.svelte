@@ -353,9 +353,7 @@
     return role === 'admin' ? '#dc2626' : '#059669';
   }
   
-  function getRoleIcon(role) {
-    return role === 'admin' ? '🛡️' : '👤';
-  }
+
   
   function getDepartmentColor(department) {
     const colors = {
@@ -367,15 +365,6 @@
     return colors[department] || '#6b7280';
   }
   
-  function getDepartmentIcon(department) {
-    const icons = {
-      frontend: '🎨',
-      backend: '⚙️',
-      mobile: '📱',
-      qa: '🔍'
-    };
-    return icons[department] || '💼';
-  }
   
   function resetFilters() {
     searchTerm = '';
@@ -395,14 +384,12 @@
   <!-- Header -->
   <div class="page-header">
     <div class="header-content">
-      <h1>👥 User Management</h1>
+      <h1>User Management</h1>
       <div class="header-actions">
         <button class="btn btn-primary" on:click={() => openUserModal()}>
-          <span class="btn-icon">➕</span>
           Add User
         </button>
         <button class="btn btn-secondary" on:click={loadUsers} disabled={loading}>
-          <span class="btn-icon" class:spinning={loading}>🔄</span>
           Refresh
         </button>
       </div>
@@ -419,7 +406,6 @@
           bind:value={searchTerm}
           class="search-input"
         />
-        <span class="search-icon">🔍</span>
       </div>
       
       <select bind:value={filterRole} class="filter-select">
@@ -466,19 +452,19 @@
           class="btn btn-small btn-success" 
           on:click={() => performBulkAction('activate')}
         >
-          ✅ Activate
+          Activate
         </button>
         <button 
           class="btn btn-small btn-warning" 
           on:click={() => performBulkAction('deactivate')}
         >
-          ❌ Deactivate
+          Deactivate
         </button>
         <button 
           class="btn btn-small btn-danger" 
           on:click={() => performBulkAction('delete')}
         >
-          🗑️ Delete
+          Delete
         </button>
       </div>
     </div>
@@ -493,13 +479,12 @@
       </div>
     {:else if error}
       <div class="error-state">
-        <h3>❌ Error</h3>
+        <h3>Error</h3>
         <p>{error}</p>
         <button class="btn btn-primary" on:click={loadUsers}>Try Again</button>
       </div>
     {:else if sortedUsers.length === 0}
       <div class="empty-state">
-        <div class="empty-icon">👥</div>
         <h3>No users found</h3>
         <p>No users match your current filters.</p>
         <button class="btn btn-primary" on:click={resetFilters}>Clear Filters</button>
@@ -553,13 +538,12 @@
                 </td>
                 <td>
                   <div class="department-badge" style="background-color: {getDepartmentColor(user.department)}20; color: {getDepartmentColor(user.department)};">
-                    <span class="dept-icon">{getDepartmentIcon(user.department)}</span>
+
                     {user.department}
                   </div>
                 </td>
                 <td>
                   <div class="role-badge" style="background-color: {getRoleColor(user.role)}20; color: {getRoleColor(user.role)};">
-                    <span class="role-icon">{getRoleIcon(user.role)}</span>
                     {user.role}
                   </div>
                 </td>
@@ -568,7 +552,7 @@
                     class="status-toggle {user.isActive !== false ? 'active' : 'inactive'}"
                     on:click={() => toggleUserStatus(user)}
                   >
-                    {user.isActive !== false ? '✅ Active' : '❌ Inactive'}
+                    {user.isActive !== false ? 'Active' : 'Inactive'}
                   </button>
                 </td>
                 <td>
@@ -884,14 +868,6 @@
     font-size: 0.875rem;
   }
   
-  .search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6b7280;
-  }
-  
   .filter-select {
     padding: 0.75rem 1rem;
     border: 1px solid #d1d5db;
@@ -1001,11 +977,6 @@
     text-transform: capitalize;
   }
   
-  .dept-icon,
-  .role-icon {
-    font-size: 0.875rem;
-  }
-  
   .status-toggle {
     border: none;
     background: none;
@@ -1092,12 +1063,6 @@
   
   .spinning {
     animation: spin 1s linear infinite;
-  }
-  
-  .empty-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
   }
   
   .error-state h3 {
@@ -1343,10 +1308,6 @@
   .btn-small {
     padding: 0.5rem 1rem;
     font-size: 0.75rem;
-  }
-  
-  .btn-icon {
-    font-size: 1rem;
   }
   
   /* Responsive Design */
