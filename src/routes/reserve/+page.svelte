@@ -345,7 +345,7 @@ function getDaysDifference(startDate, endDate) {
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </svelte:head>
 
-<Header/>
+<Header redirect={true}/>
 
 <div class="app-container">
   <header class="app-header">

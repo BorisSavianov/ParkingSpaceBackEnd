@@ -2,6 +2,8 @@
   import { goto } from '$app/navigation';
   import { user } from '$lib/stores/user.js';
   import { onMount } from 'svelte';
+  import Header from '$lib/components/Header.svelte';
+  import { theme } from '$lib/stores/theme';
 
   let registerData = {
     email: '',
@@ -110,31 +112,14 @@
   <meta name="description" content="Secure login and registration for the parking reservation system" />
 </svelte:head>
 
+<Header redirect={false}/>
+
 <div class="page-container">
   <!-- Background decoration -->
-  <div class="background-decoration"></div>
+  <div class="background-decoration"class:dark={$theme === 'dark'}></div>
   
-  <!-- Header -->
-  <div class="header">
-    <div class="header-content">
-      <div class="header-left">
-        <div class="header-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7v10c0 5.55 3.84 10 9 10s9-4.45 9-10V7l-10-5z"/>
-            <path d="M12 8v8"/>
-            <path d="M8 12h8"/>
-          </svg>
-        </div>
-        <h1 class="header-title">ReserveParkingSpace</h1>
-      </div>
-      <div class="header-subtitle">
-        {isLoginMode ? 'Welcome back!' : 'Join us today!'}
-      </div>
-    </div>
-  </div>
-
   <!-- Main Content -->
-  <div class="main-content">
+  <div class="main-content"class:dark={$theme === 'dark'}>
     <div class="auth-container">
       <div class="auth-card">
         <!-- Mode Toggle -->
@@ -305,24 +290,29 @@
               </div>
 
               <div class="form-group">
-                <label for="register-department" class="form-label">Department</label>
-                <div class="input-container">
-                  <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 21h18"/>
-                    <path d="M5 21V7l8-4v18"/>
-                    <path d="M19 21V11l-6-4"/>
-                  </svg>
-                  <input 
-                    id="register-department"
-                    type="text" 
-                    bind:value={registerData.department} 
-                    placeholder="Your department"
-                    required
-                    disabled={loading}
-                    class="form-input"
-                  />
-                </div>
-              </div>
+  <label for="register-department" class="form-label">Department</label>
+  <div class="input-container">
+    <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 21h18"/>
+      <path d="M5 21V7l8-4v18"/>
+      <path d="M19 21V11l-6-4"/>
+    </svg>
+    <select
+      id="register-department"
+      bind:value={registerData.department}
+      required
+      disabled={loading}
+      class="form-input"
+    >
+      <option value="" disabled selected>Select department</option>
+      <option value="frontend">Frontend</option>
+      <option value="backend">Backend</option>
+      <option value="mobile">Mobile</option>
+      <option value="qa">QA</option>
+    </select>
+  </div>
+</div>
+
 
               <div class="form-group">
                 <label for="register-email" class="form-label">Email Address</label>
@@ -404,10 +394,12 @@
   .background-decoration {
     position: absolute;
     inset: 0;
-    background: 
-      radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(67, 56, 202, 0.1) 0%, transparent 50%);
+    background-color: #dbeafe;
     pointer-events: none;
+    transition: background 0.3s ease;
+  }
+  .background-decoration.dark{
+    background-color: #1e293b; 
   }
 
   /* Header */
@@ -463,6 +455,9 @@
     position: relative;
     z-index: 1;
   }
+  .main-content.dark{
+
+  }
 
   .auth-container {
     width: 100%;
@@ -475,6 +470,11 @@
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     overflow: hidden;
     animation: slideUp 0.6s ease-out;
+  }
+
+  .main-content.dark .auth-card{
+    background-color: #1e293b;
+    box-shadow: 0 25px 50px -12px rgba(255, 255, 255, 0.25);
   }
 
   @keyframes slideUp {
@@ -496,6 +496,9 @@
     padding: 0.25rem;
     margin: 1.5rem 1.5rem 0;
   }
+  .main-content.dark .mode-toggle{
+    background: #475569;
+  }
 
   .toggle-button {
     flex: 1;
@@ -509,11 +512,22 @@
     color: #6b7280;
   }
 
+  .main-content.dark .toggle-button{
+    background: #334155;
+    border-color: #475569;  
+  }
+
   .toggle-button.active {
     background: white;
     color: #2563eb;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   }
+
+  .main-content.dark .toggle-button.active{
+    background:#1e293b; 
+    box-shadow: 0 1px 3px 0 rgba(255, 255, 255, 0.15);
+  }
+  
 
   /* Error Message */
   .error-message {
@@ -545,10 +559,17 @@
     color: #1f2937;
     margin-bottom: 0.5rem;
   }
+  .main-content.dark .form-title{
+    color:white
+  }
 
   .form-subtitle {
     color: #6b7280;
     font-size: 0.875rem;
+  }
+
+  .main-content.dark .form-subtitle{
+    color: white;
   }
 
   /* Form */
@@ -574,6 +595,10 @@
     font-weight: 500;
     color: #374151;
     font-size: 0.875rem;
+  }
+
+  .main-content.dark .form-label{
+    color: white;
   }
 
   .input-container {
@@ -664,6 +689,10 @@
   .switch-text {
     color: #6b7280;
     font-size: 0.875rem;
+  }
+
+  .main-content.dark .switch-text{
+    color: white;
   }
 
   .switch-button {

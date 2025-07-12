@@ -340,7 +340,7 @@
   <title>Profile - ReserveParkingSpace</title>
 </svelte:head>
 
-<Header/>
+<Header redirect={true}/>
 
 <div class="page-container" class:dark={$theme === 'dark'}>
   <!-- Main Content -->

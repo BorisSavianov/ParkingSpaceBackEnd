@@ -4,6 +4,7 @@
   import { theme, toggleTheme } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   
+  export let redirect;
   let isScrolled = false;
   let isMenuOpen = false;
   let windowWidth = 1024;
@@ -34,6 +35,8 @@
   function toggleMenu() {
     isMenuOpen = !isMenuOpen;
   }
+
+  
 </script>
 
 <svelte:head>
@@ -85,8 +88,11 @@
         alt="Company Logo" 
         class="logo" 
         in:fade={{ duration: 500 }}
-        on:click={goto('/')}
-      />
+        
+       on:click={() => { if (redirect === true) goto('/'); }}
+
+        
+        />
     </div>
     
     <!-- Desktop Navigation -->
@@ -94,12 +100,15 @@
       <button on:click={toggleTheme} class="nav-button icon-button" aria-label="Toggle theme">
         <img src="/dark-mode.png" alt="Theme" class="button-icon bri" />
       </button>
+      {#if redirect === true}
       <a on:click={goto('/admin')} tyle="fill: white;" class="nav-button icon-button" aria-label="User profile">
         <img src="/admin.svg" alt="Profile" class="button-icon" />
       </a>
+      
       <a on:click={goto('/profile')} class="nav-button icon-button" aria-label="User profile">
         <img src="/user.png" alt="Profile" class="button-icon" />
       </a>
+      {/if}
     </nav>
     
     <!-- Mobile Menu Toggle -->
@@ -115,13 +124,13 @@
       toggleMenu();
     }} class="mobile-nav-button icon-button" aria-label="Toggle theme">
       <img src="/dark-mode.png" alt="Theme" class="button-icon bri" />
-    </button>
+    </button>{#if redirect === true}
     <a on:click={goto('/admin')} class="mobile-nav-button icon-button" aria-label="User profile">
       <img src="/admin.svg" alt="Profile" class="button-icon " />
     </a>
     <a on:click={goto('/profile')} class="mobile-nav-button icon-button" aria-label="User profile">
       <img src="/user.png" alt="Profile" class="button-icon " />
-    </a>
+    </a>{/if}
   </div>
 </header>
 
