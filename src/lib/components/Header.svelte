@@ -122,7 +122,7 @@
     <button on:click={() => {
       toggleTheme();
       toggleMenu();
-    }} class="mobile-nav-button icon-button" aria-label="Toggle theme">
+    }} style="margin: 0 auto;" class="mobile-nav-button icon-button" aria-label="Toggle theme">
       <img src="/dark-mode.png" alt="Theme" class="button-icon bri" />
     </button>{#if redirect === true}
     <a on:click={goto('/admin')} class="mobile-nav-button icon-button" aria-label="User profile">
