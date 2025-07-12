@@ -728,7 +728,7 @@
               class:error={userFormErrors.role}
               required
             >
-              <option value="user">User</option>
+              <option value="user">Emoloyee</option>
               <option value="admin">Admin</option>
             </select>
             {#if userFormErrors.role}
