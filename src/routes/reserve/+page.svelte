@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import Header from '$lib/components/Header.svelte';
+  import { theme } from '$lib/stores/theme';
 
   $: space = $page.url.searchParams.get('space');
 
@@ -346,7 +347,7 @@ function getDaysDifference(startDate, endDate) {
 </script>
 <Header redirect={true}/>
 
-<div class="app-container">
+<div class="app-container"class:dark={$theme==='dark'}>
   <header class="app-header">
     <div class="header-content">
       <h1 class="app-title">Reserve Parking Space</h1>
@@ -487,13 +488,14 @@ function getDaysDifference(startDate, endDate) {
 
   /* Header Styles */
   .app-header {
-    background: linear-gradient(135deg, #3a6bc8 0%, #4fc3f7 100%);
+    background: linear-gradient(90deg, #2563eb 0%, #4338ca 100%);
     color: white;
     padding: 2rem 0 0;
     border-radius: 0 0 20px 20px;
     margin-bottom: 2rem;
     box-shadow: 0 4px 20px rgba(58, 107, 200, 0.15);
     position: relative;
+    text-align: center;
   }
 
   .header-content {
@@ -518,17 +520,22 @@ function getDaysDifference(startDate, endDate) {
 
   .header-accent {
     height: 20px;
-    background: rgba(255, 255, 255, 0.2);
     margin-top: 1.5rem;
     border-radius: 0 0 20px 20px;
   }
 
   /* Main Calendar Styles */
   .app-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem 2rem;
+    padding-bottom: 50px;
+    background: #dbeafe;
+    min-height: 100vh;
+    transition: background 0.3s ease;
     
+  }
+
+    .app-container.dark {
+    background: #1e293b;
+    transition: background 0.3s ease;
   }
 
   .calendar-container {
@@ -540,6 +547,12 @@ function getDaysDifference(startDate, endDate) {
     max-width: 800px;
   }
 
+  .app-container.dark .calendar-container {
+    background: #334155;
+    box-shadow: 0 0 60px rgba(165, 165, 165, 0.24);
+  }
+
+
   .calendar-header {
     display: flex;
     justify-content: space-between;
@@ -547,6 +560,10 @@ function getDaysDifference(startDate, endDate) {
     margin-bottom: 2rem;
     flex-wrap: wrap;
     gap: 1rem;
+  }
+
+  .app-container.app-container.dark h2{
+    color: #fff;
   }
 
   .calendar-header h2 {
@@ -571,6 +588,10 @@ function getDaysDifference(startDate, endDate) {
   .nav-button:hover {
     background: #d0e0ff;
     transform: translateY(-1px);
+  }
+
+  .app-container.dark .nav-button{
+    background: #334155;
   }
 
   .action-button {
@@ -638,16 +659,28 @@ function getDaysDifference(startDate, endDate) {
     color: #4a6baf;
   }
 
+  .app-container.dark .day{
+    background: #334155;
+    border: 1px solid #242d3a;
+  }
+
+
+
   .day:hover {
     background-color: #f0f5ff;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(58, 107, 200, 0.1);
   }
 
+
   .day.empty {
     border: none;
     background: transparent;
     cursor: default;
+  }
+
+    .app-container.dark .day.empty{
+    border: none
   }
 
   .day.today {
