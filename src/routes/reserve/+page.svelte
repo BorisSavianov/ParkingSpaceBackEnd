@@ -6,6 +6,7 @@
 
   $: space = $page.url.searchParams.get('space');
 
+
   let currentDate = new Date();
   let currentMonth = currentDate.getMonth();
   let currentYear = currentDate.getFullYear();
@@ -338,13 +339,11 @@ function getDaysDifference(startDate, endDate) {
   onMount(() => {
     updateCalendar();
     loadExistingReservations();
+    if (!space) {
+      goto('/');
+    }
   });
 </script>
-
-<svelte:head>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-</svelte:head>
-
 <Header redirect={true}/>
 
 <div class="app-container">
@@ -484,10 +483,7 @@ function getDaysDifference(startDate, endDate) {
     padding: 0;
     background-color: #f5f9ff;
     color: #2c3e50;
-    font-family: "Poppins", sans-serif;
   }
-
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
   /* Header Styles */
   .app-header {
@@ -532,7 +528,7 @@ function getDaysDifference(startDate, endDate) {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 2rem 2rem;
-    font-family: 'Poppins', sans-serif;
+    
   }
 
   .calendar-container {
@@ -566,7 +562,7 @@ function getDaysDifference(startDate, endDate) {
     background: #e6f0ff;
     border: none;
     border-radius: 8px;
-    font-family: 'Poppins', sans-serif;
+    
     font-weight: 600;
     color: #3a6bc8;
     transition: all 0.2s ease;
@@ -582,7 +578,7 @@ function getDaysDifference(startDate, endDate) {
     cursor: pointer;
     border: none;
     border-radius: 8px;
-    font-family: 'Poppins', sans-serif;
+    
     font-weight: 600;
     transition: all 0.2s ease;
   }
@@ -630,7 +626,7 @@ function getDaysDifference(startDate, endDate) {
     min-height: 50px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-family: 'Poppins', sans-serif;
+    
     font-weight: 500;
     display: flex;
     flex-direction: column;
@@ -690,7 +686,7 @@ function getDaysDifference(startDate, endDate) {
   .range-info {
     margin-top: 2rem;
     text-align: center;
-    font-family: 'Poppins', sans-serif;
+    
     font-size: 1.1rem;
   }
 
@@ -847,7 +843,7 @@ function getDaysDifference(startDate, endDate) {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Poppins', sans-serif;
+    
     font-weight: 600;
     transition: all 0.2s ease;
   }
@@ -863,7 +859,7 @@ function getDaysDifference(startDate, endDate) {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Poppins', sans-serif;
+    
     font-weight: 600;
     transition: all 0.2s ease;
   }
@@ -885,7 +881,7 @@ function getDaysDifference(startDate, endDate) {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Poppins', sans-serif;
+    
     font-weight: 600;
     transition: all 0.2s ease;
   }
@@ -925,7 +921,7 @@ function getDaysDifference(startDate, endDate) {
     border-radius: 8px;
     margin-top: 1rem;
     cursor: pointer;
-    font-family: 'Poppins', sans-serif;
+    
     font-weight: 600;
     transition: all 0.2s ease;
   }
