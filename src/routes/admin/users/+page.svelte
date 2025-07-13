@@ -31,7 +31,7 @@
     email: '',
     username: '',
     department: '',
-    role: 'user',
+    role: 'employee',
     isActive: true
   };
   
@@ -40,7 +40,7 @@
   let formSubmitting = false;
   
   const departments = ['frontend', 'backend', 'mobile', 'qa'];
-  const roles = ['user', 'admin'];
+  const roles = ['employee', 'admin'];
   
   // Reactive filtering
   $: filteredUsers = users.filter(user => {
@@ -110,7 +110,7 @@
         email: user.email || '',
         username: user.username || '',
         department: user.department || '',
-        role: user.role || 'user',
+        role: user.role || 'employee',
         isActive: user.isActive !== false
       };
     } else {
@@ -122,7 +122,7 @@
         email: '',
         username: '',
         department: '',
-        role: 'user',
+        role: 'employee',
         isActive: true
       };
     }
@@ -140,7 +140,7 @@
       email: '',
       username: '',
       department: '',
-      role: 'user',
+      role: 'employee',
       isActive: true
     };
     userFormErrors = {};
@@ -728,7 +728,7 @@
               class:error={userFormErrors.role}
               required
             >
-              <option value="user">Emoloyee</option>
+              <option value="employee">Employee</option>
               <option value="admin">Admin</option>
             </select>
             {#if userFormErrors.role}
